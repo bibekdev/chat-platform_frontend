@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import axios, {
   AxiosError,
   AxiosInstance,
@@ -5,13 +6,8 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig
 } from 'axios';
-import { cookies } from 'next/headers';
-import type { z } from 'zod';
 
-import { ApiError, ApiErrorResponse, getErrorMessage, isApiError } from './api-error';
-
-// Re-export error utilities for convenience
-export { ApiError, getErrorMessage, isApiError } from './api-error';
+import { ApiError, ApiErrorResponse } from './api-error';
 
 // ============================================
 // TYPES
@@ -68,29 +64,13 @@ interface ServerFetchOptions extends Omit<AxiosRequestConfig, 'url' | 'method'> 
 export async function getServerAuthToken(): Promise<string | null> {
   try {
     const cookieStore = await cookies();
-    return cookieStore.get('accessToken')?.value || null;
+    return cookieStore.get('chat_accessToken')?.value || null;
   } catch {
     return null;
   }
 }
 
-// ============================================
-// API ENDPOINTS
-// ============================================
-
-export const endpoints = {
-  auth: {
-    login: '/auth/login',
-    register: '/auth/register',
-    logout: '/auth/logout',
-    refresh: '/auth/refresh',
-    me: '/auth/me'
-  },
-  users: {
-    profile: (id: string) => `/users/${id}`,
-    update: (id: string) => `/users/${id}`
-  }
-} as const;
+const API_URL = process.env.API_URL || 'http://localhost:8080/api/v1';
 
 // ============================================
 // QUERY PARAMETER UTILITIES
@@ -119,8 +99,6 @@ export function buildPaginationQuery(params: PaginationParams): string {
 // AXIOS INSTANCE FACTORY
 // ============================================
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
 function createServerAxiosInstance(): AxiosInstance {
   const instance = axios.create({
     baseURL: API_URL,
@@ -145,7 +123,7 @@ function createServerAxiosInstance(): AxiosInstance {
     }
   );
 
-  // Response interceptor
+  // Response interceptor with token refresh
   instance.interceptors.response.use(
     (response: AxiosResponse) => {
       // Log responses in development
@@ -154,7 +132,18 @@ function createServerAxiosInstance(): AxiosInstance {
       }
       return response;
     },
-    (error: AxiosError<ApiErrorResponse>) => {
+    async (error: AxiosError<ApiErrorResponse>) => {
+      const originalRequest = error.config as InternalAxiosRequestConfig & {
+        _retry?: boolean;
+        skipAuth?: boolean;
+      };
+
+      // Note: Server-side token refresh is disabled because cookies().set() only works
+      // in Server Actions or Route Handlers, NOT in Server Components or interceptors.
+      // If we refresh tokens here, we can't persist the new cookies, which causes
+      // "Token has been revoked" errors on subsequent requests.
+      // Let the client-side handle all token refresh via api.ts interceptor.
+
       // Log errors in development
       if (process.env.NODE_ENV === 'development') {
         console.error(
@@ -258,93 +247,3 @@ export const serverApi = {
   delete: <T>(endpoint: string, options?: ServerFetchOptions) =>
     serverFetch<T>(endpoint, { ...options, method: 'DELETE' })
 };
-
-// ============================================
-// VALIDATION HELPERS
-// ============================================
-
-/**
- * Fetch data from the server and validate with Zod schema
- */
-export async function fetchWithValidationServer<T>(
-  endpoint: string,
-  schema: z.ZodType<T>,
-  options?: ServerFetchOptions
-): Promise<T> {
-  const response = await serverApi.get<T>(endpoint, options);
-
-  const result = schema.safeParse(response);
-  if (!result.success) {
-    console.error('[Validation Error]', result.error.flatten());
-    throw new ApiError(
-      422,
-      'Response validation failed',
-      { zodErrors: result.error.flatten() },
-      'VALIDATION_ERROR'
-    );
-  }
-
-  return result.data;
-}
-
-/**
- * Fetch data wrapped in ApiResponse format and validate
- */
-export async function fetchApiResponseWithValidation<T>(
-  endpoint: string,
-  schema: z.ZodType<T>,
-  options?: ServerFetchOptions
-): Promise<T> {
-  const response = await serverApi.get<ApiResponse<T>>(endpoint, options);
-
-  if (!response.success || !response.data) {
-    throw new ApiError(
-      400,
-      response.message || 'Invalid API response',
-      undefined,
-      'INVALID_RESPONSE'
-    );
-  }
-
-  const result = schema.safeParse(response.data);
-  if (!result.success) {
-    console.error('[Validation Error]', result.error.flatten());
-    throw new ApiError(
-      422,
-      'Response data validation failed',
-      { zodErrors: result.error.flatten() },
-      'VALIDATION_ERROR'
-    );
-  }
-
-  return result.data;
-}
-
-// ============================================
-// ERROR HANDLING UTILITIES
-// ============================================
-
-/**
- * Safe wrapper for async operations with error handling
- */
-export async function safeServerFetch<T>(
-  fetcher: () => Promise<T>
-): Promise<{ data: T; error: null } | { data: null; error: ApiError }> {
-  try {
-    const data = await fetcher();
-    return { data, error: null };
-  } catch (error) {
-    if (isApiError(error)) {
-      return { data: null, error };
-    }
-
-    // Wrap unknown errors
-    const apiError = new ApiError(
-      500,
-      getErrorMessage(error),
-      undefined,
-      'UNKNOWN_ERROR'
-    );
-    return { data: null, error: apiError };
-  }
-}
