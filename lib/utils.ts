@@ -46,7 +46,9 @@ export function setCookie(
   const secureStr = secure ? '; secure' : '';
   const sameSiteStr = `; samesite=${sameSite}`;
 
-  document.cookie = `${name}=${encodeURIComponent(value)}${expiresStr}; path=${path}${domainStr}${secureStr}${sameSiteStr}`;
+  document.cookie = `${name}=${encodeURIComponent(
+    value
+  )}${expiresStr}; path=${path}${domainStr}${secureStr}${sameSiteStr}`;
 }
 
 /**
@@ -77,4 +79,13 @@ export function getCookie(name: string): string | null {
 export function deleteCookie(name: string, path = '/'): void {
   if (typeof document === 'undefined') return;
   setCookie(name, '', { expires: new Date(0), path });
+}
+
+export function getUserInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 }

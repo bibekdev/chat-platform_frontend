@@ -15,7 +15,7 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useLoginMutation } from '../hooks/useLoginMutation';
+import { useLoginMutation } from '@/features/auth/hooks';
 import { LoginDto, loginSchema } from '../schemas/auth.schema';
 
 export const LoginForm = () => {

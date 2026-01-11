@@ -7,6 +7,16 @@ export const queryKeys = {
 
   user: {
     all: ['user'] as const,
-    profile: () => [...queryKeys.user.all, 'profile'] as const
+    profile: () => [...queryKeys.user.all, 'profile'] as const,
+    suggestions: () => [...queryKeys.user.all, 'suggestions'] as const
+  },
+
+  friends: {
+    all: ['friends'] as const,
+    incomingRequestsCount: () =>
+      [...queryKeys.friends.all, 'incomingRequestsCount'] as const,
+    incomingRequests: () => [...queryKeys.friends.all, 'incomingRequests'] as const,
+    outgoingRequests: () => [...queryKeys.friends.all, 'outgoingRequests'] as const,
+    friends: () => [...queryKeys.friends.all, 'friends'] as const
   }
 };

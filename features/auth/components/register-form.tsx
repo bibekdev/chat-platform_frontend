@@ -15,7 +15,7 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useRegisterMutation } from '../hooks/useRegisterMutation';
+import { useRegisterMutation } from '@/features/auth/hooks';
 import { RegisterDto, registerSchema } from '../schemas/auth.schema';
 
 export const RegisterForm = () => {
