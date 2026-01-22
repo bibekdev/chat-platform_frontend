@@ -22,5 +22,20 @@ export const endpoints = {
     acceptFriendRequest: (id: string) => `/friends/requests/${id}/accept`,
     rejectFriendRequest: (id: string) => `/friends/requests/${id}/reject`,
     cancelFriendRequest: (id: string) => `/friends/requests/${id}/cancel`
+  },
+
+  conversations: {
+    list: '/conversations',
+    create: '/conversations',
+    get: (id: string) => `/conversations/${id}`,
+    update: (id: string) => `/conversations/${id}`,
+    delete: (id: string) => `/conversations/${id}`,
+    leave: (id: string) => `/conversations/${id}/leave`,
+    members: (id: string) => `/conversations/${id}/members`,
+    addMembers: (id: string) => `/conversations/${id}/members`,
+    removeMember: (conversationId: string, memberId: string) =>
+      `/conversations/${conversationId}/members/${memberId}`,
+    updateMemberRole: (conversationId: string, memberId: string) =>
+      `/conversations/${conversationId}/members/${memberId}/role`
   }
 } as const;
