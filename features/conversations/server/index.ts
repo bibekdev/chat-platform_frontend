@@ -5,15 +5,9 @@ import { Conversation, ConversationWithDetails } from '../types';
 
 const CONVERSATIONS_LIMIT = 20;
 
-export const getConversations = async ({
-  pageParam,
-  limit = CONVERSATIONS_LIMIT
-}: {
-  pageParam: string | null;
-  limit?: number;
-}) => {
+export const getConversations = async ({ pageParam }: { pageParam: string | null }) => {
   const params = new URLSearchParams();
-  params.set('limit', limit.toString());
+  params.set('limit', CONVERSATIONS_LIMIT.toString());
   if (pageParam) {
     params.set('cursor', pageParam);
   }

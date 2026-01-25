@@ -8,6 +8,14 @@ export interface PublicUser {
   avatar: string;
 }
 
+export interface CreateConversationDto {
+  type: ConversationType;
+  name?: string;
+  description?: string;
+  avatarUrl?: string;
+  memberIds: string[];
+}
+
 export interface LastMessage {
   id: string;
   content: string | null;

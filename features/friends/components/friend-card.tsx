@@ -5,6 +5,8 @@ import { MessageCircle, UserMinus } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useAuthUser } from '@/features/auth/hooks';
+import { useCreateConversationMutation } from '@/features/conversations/hooks';
 import { getUserInitials } from '@/lib/utils';
 import { Friend } from '../types';
 
@@ -13,6 +15,12 @@ interface FriendCardProps {
 }
 
 export function FriendCard({ data }: FriendCardProps) {
+  const { mutate: createConversation } = useCreateConversationMutation();
+
+  const handleCreateConversation = () => {
+    createConversation({ type: 'direct', memberIds: [data.id] });
+  };
+
   return (
     <Card className='flex-row items-center justify-between p-4 gap-4'>
       <div className='flex items-center gap-2'>
@@ -27,7 +35,9 @@ export function FriendCard({ data }: FriendCardProps) {
       </div>
 
       <div className='flex items-center gap-2'>
-        <Button variant='outline'>
+        <Button
+          variant='outline'
+          onClick={handleCreateConversation}>
           <MessageCircle className='size-4' />
           Message
         </Button>

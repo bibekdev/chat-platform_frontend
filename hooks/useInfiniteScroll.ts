@@ -98,7 +98,7 @@ export function useInfiniteScroll<TData, TError = Error>({
     ...queryOptions
   });
 
-  // Flatten all pages into a single array
+  // Flatten all paıges into a single array
   const flatData = data?.pages.flatMap(page => page.data) ?? [];
 
   // Set up intersection observer for auto-loading
