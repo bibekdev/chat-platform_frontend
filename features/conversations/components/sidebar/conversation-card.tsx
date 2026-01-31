@@ -1,12 +1,13 @@
 'use client';
 
+import { useParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { Users } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
+import { Conversation } from '@/features/conversations/types';
 import { cn, getUserInitials } from '@/lib/utils';
-import { Conversation } from '../types';
 
 interface ConversationCardProps {
   conversation: Conversation;
@@ -14,6 +15,8 @@ interface ConversationCardProps {
 }
 
 export function ConversationCard({ conversation, onClick }: ConversationCardProps) {
+  const { conversationId } = useParams();
+
   const isGroup = conversation.type === 'group';
   const displayName = conversation.name || 'Direct Message';
   const lastMessageContent = conversation.lastMessage?.content;
@@ -23,11 +26,14 @@ export function ConversationCard({ conversation, onClick }: ConversationCardProp
       })
     : null;
 
+  const isActive = conversation.id === conversationId;
+
   return (
     <Card
       className={cn(
-        'flex-row items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-accent/50',
-        onClick && 'cursor-pointer'
+        'flex-row items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-secondary border-none bg-transparent shadow-none',
+        onClick && 'cursor-pointer',
+        isActive && 'bg-secondary'
       )}
       onClick={() => onClick?.(conversation)}>
       {/* Avatar */}

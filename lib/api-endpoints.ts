@@ -27,6 +27,7 @@ export const endpoints = {
   conversations: {
     list: '/conversations',
     create: '/conversations',
+    details: (id: string) => `/conversations/${id}/details`,
     get: (id: string) => `/conversations/${id}`,
     update: (id: string) => `/conversations/${id}`,
     delete: (id: string) => `/conversations/${id}`,

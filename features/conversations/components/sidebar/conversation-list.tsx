@@ -10,8 +10,8 @@ import {
   EmptyTitle
 } from '@/components/ui/empty';
 import { Spinner } from '@/components/ui/spinner';
-import { useConversations } from '../hooks';
-import { Conversation } from '../types';
+import { useConversations } from '@/features/conversations/hooks';
+import { Conversation } from '@/features/conversations/types';
 import { ConversationCard } from './conversation-card';
 
 interface ConversationListProps {

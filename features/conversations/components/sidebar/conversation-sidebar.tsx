@@ -2,10 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 
-import { Conversation } from '../types';
+import { Conversation } from '../../types';
 import { ConversationList } from './conversation-list';
 
-export function ConversationsPageContent() {
+export const ConversationSidebar = () => {
   const router = useRouter();
 
   const handleConversationClick = (conversation: Conversation) => {
@@ -13,9 +13,9 @@ export function ConversationsPageContent() {
   };
 
   return (
-    <div className='flex flex-col h-full'>
+    <div className='flex flex-col border-r w-[400px]'>
       <div className='border-b p-4'>
-        <h1 className='text-2xl font-bold'>Messages</h1>
+        <h1 className='text-2xl font-bold'>Conversations</h1>
         <p className='text-sm text-muted-foreground'>Your conversations</p>
       </div>
 
@@ -24,4 +24,4 @@ export function ConversationsPageContent() {
       </div>
     </div>
   );
-}
+};
