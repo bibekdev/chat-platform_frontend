@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 import { socketManager } from '@/lib/socket';
 
-export function useSocketEvents<T extends Record<string, (data: unknown) => void>>(
+export function useSocketEvents<T extends Record<string, (data: any) => void>>(
   events: T,
   enabled: boolean = true
 ) {
@@ -15,7 +15,7 @@ export function useSocketEvents<T extends Record<string, (data: unknown) => void
     const unsubscribes: (() => void)[] = [];
 
     Object.entries(eventsRef.current).forEach(([event, handler]) => {
-      const callback = (data: unknown) => {
+      const callback = (data: any) => {
         // Get the latest handler from ref
         const currentHandler = eventsRef.current[event as keyof T];
         if (currentHandler) {

@@ -13,7 +13,7 @@ export const ConversationSidebar = () => {
   };
 
   return (
-    <div className='flex flex-col border-r w-[400px]'>
+    <div className='flex flex-col border-r w-100'>
       <div className='border-b p-4'>
         <h1 className='text-2xl font-bold'>Conversations</h1>
         <p className='text-sm text-muted-foreground'>Your conversations</p>

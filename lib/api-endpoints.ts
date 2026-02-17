@@ -38,5 +38,16 @@ export const endpoints = {
       `/conversations/${conversationId}/members/${memberId}`,
     updateMemberRole: (conversationId: string, memberId: string) =>
       `/conversations/${conversationId}/members/${memberId}/role`
+  },
+
+  messages: {
+    list: (conversationId: string) => `/conversations/${conversationId}/messages`,
+    create: (conversationId: string) => `/conversations/${conversationId}/messages`,
+    get: (conversationId: string, messageId: string) =>
+      `/conversations/${conversationId}/messages/${messageId}`,
+    update: (conversationId: string, messageId: string) =>
+      `/conversations/${conversationId}/messages/${messageId}`,
+    delete: (conversationId: string, messageId: string) =>
+      `/conversations/${conversationId}/messages/${messageId}`
   }
 } as const;
