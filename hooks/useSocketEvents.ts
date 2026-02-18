@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import React from 'react';
 
 import { socketManager } from '@/lib/socket';
 
@@ -6,11 +6,20 @@ export function useSocketEvents<T extends Record<string, (data: any) => void>>(
   events: T,
   enabled: boolean = true
 ) {
-  const eventsRef = useRef(events);
+  const eventsRef = React.useRef(events);
   eventsRef.current = events;
 
-  useEffect(() => {
-    if (!enabled) return;
+  // Track socket connection status so we re-subscribe when socket connects
+  const [isConnected, setIsConnected] = React.useState(socketManager.isConnected());
+
+  React.useEffect(() => {
+    return socketManager.onStatusChange(status => {
+      setIsConnected(status === 'connected');
+    });
+  }, []);
+
+  React.useEffect(() => {
+    if (!enabled || !isConnected) return;
 
     const unsubscribes: (() => void)[] = [];
 
@@ -30,5 +39,5 @@ export function useSocketEvents<T extends Record<string, (data: any) => void>>(
     return () => {
       unsubscribes.forEach(unsubscribe => unsubscribe());
     };
-  }, [enabled, Object.keys(events).join(',')]);
+  }, [enabled, isConnected, Object.keys(events).join(',')]);
 }

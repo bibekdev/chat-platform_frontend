@@ -31,9 +31,7 @@ export const ConversationIdPageContent = ({
   return (
     <div className='flex-1 flex flex-col h-full'>
       <MessageHeader conversationId={conversationId} />
-      <div className='flex-1 overflow-y-auto'>
-        <MessageList conversationId={conversationId} />
-      </div>
+      <MessageList conversationId={conversationId} />
       <div className='border-t p-4'>
         <MessageInput onSendMessage={handleSendMessage} />
       </div>

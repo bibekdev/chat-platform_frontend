@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import React from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { MessageSquareIcon } from 'lucide-react';
 
@@ -54,9 +55,65 @@ export const MessageList = ({ conversationId }: MessageListProps) => {
   const { data, isLoading, loadMoreRef, isFetchingNextPage, error } =
     useGetMessages(conversationId);
 
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const bottomRef = React.useRef<HTMLDivElement>(null);
+  const isNearBottomRef = React.useRef(true);
+  const prevMessageCountRef = React.useRef(0);
+  const initialScrollDoneRef = React.useRef(false);
+  const wasLoadingMoreRef = React.useRef(false);
+  const savedScrollMetricsRef = React.useRef({ scrollHeight: 0, scrollTop: 0 });
+
   // Reverse for chronological order (API returns newest first)
   const messages = [...data].reverse();
   const messageGroups = groupMessageByDate(messages);
+
+  // Continously track whether user is near the bottom (used before DOM updates)
+  const handleScroll = React.useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (el) {
+      isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (isFetchingNextPage) {
+      wasLoadingMoreRef.current = true;
+      const el = scrollContainerRef.current;
+      if (el) {
+        savedScrollMetricsRef.current = {
+          scrollHeight: el.scrollHeight,
+          scrollTop: el.scrollTop
+        };
+      }
+    }
+  }, [isFetchingNextPage]);
+
+  // Handle scroll position after DOM updates (run before browser paints)
+  React.useLayoutEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const currentCount = messages.length;
+    const prevCount = prevMessageCountRef.current;
+
+    if (!initialScrollDoneRef.current && currentCount > 0 && !isLoading) {
+      // Initial load: scroll to bottom
+      el.scrollTop = el.scrollHeight;
+      initialScrollDoneRef.current = true;
+    } else if (wasLoadingMoreRef.current && !isFetchingNextPage) {
+      // Older messages loaded: maintain scroll position so viewport doesn't jump
+      wasLoadingMoreRef.current = false;
+      const addedHeight = el.scrollHeight - savedScrollMetricsRef.current.scrollHeight;
+      el.scrollTop = savedScrollMetricsRef.current.scrollTop + addedHeight;
+    } else if (currentCount > prevCount && prevCount > 0) {
+      // New message arrived: auto-scroll to bottom if user was near the end
+      if (isNearBottomRef.current) {
+        el.scrollTop = el.scrollHeight;
+      }
+    }
+
+    prevMessageCountRef.current = currentCount;
+  }, [messages.length, isLoading, isFetchingNextPage]);
 
   if (isLoading) {
     return (
@@ -102,8 +159,22 @@ export const MessageList = ({ conversationId }: MessageListProps) => {
   }
 
   return (
-    <div className='flex flex-col gap-4 p-4 h-full'>
+    <div
+      ref={scrollContainerRef}
+      onScroll={handleScroll}
+      className='flex-1 overflow-y-auto'>
       <div className='flex flex-col gap-1 p-4'>
+        <div
+          ref={loadMoreRef}
+          className='h-1'
+        />
+
+        {isFetchingNextPage && (
+          <div className='flex justify-center py-3'>
+            <Spinner className='size-5 text-primary' />
+          </div>
+        )}
+
         {messageGroups.map(group => (
           <div
             key={group.date}
@@ -257,6 +328,9 @@ export const MessageList = ({ conversationId }: MessageListProps) => {
             })}
           </div>
         ))}
+
+        {/* Bottom anchor for auto scroll */}
+        <div ref={bottomRef} />
       </div>
     </div>
   );
