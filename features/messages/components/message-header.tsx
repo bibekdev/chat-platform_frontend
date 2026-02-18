@@ -1,7 +1,5 @@
 'use client';
 
-import { useParams } from 'next/navigation';
-
 import { MoreVerticalIcon, PhoneIcon, VideoIcon } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { useConversationById } from '@/features/conversations/hooks';
 import { getUserInitials } from '@/lib/utils';
 
-export const MessageHeader = () => {
-  const { conversationId } = useParams();
+interface MessageHeaderProps {
+  conversationId: string;
+}
 
-  const { data } = useConversationById(conversationId as string);
+export const MessageHeader = ({ conversationId }: MessageHeaderProps) => {
+  const { data } = useConversationById(conversationId);
 
   return (
     <div className='border-b p-4 flex items-center justify-between'>

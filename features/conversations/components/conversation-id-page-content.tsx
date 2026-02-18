@@ -30,9 +30,9 @@ export const ConversationIdPageContent = ({
 
   return (
     <div className='flex-1 flex flex-col h-full'>
-      <MessageHeader />
+      <MessageHeader conversationId={conversationId} />
       <div className='flex-1 overflow-y-auto'>
-        <MessageList />
+        <MessageList conversationId={conversationId} />
       </div>
       <div className='border-t p-4'>
         <MessageInput onSendMessage={handleSendMessage} />

@@ -1,9 +1,12 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 
+import { ConversationIdPageContent } from '@/features/conversations/components';
 import { getConversationById } from '@/features/conversations/server';
-import { MessagePageContent } from '@/features/messages/components';
+import { getConversationMessages } from '@/features/messages/server';
+import { MessageWithDetails } from '@/features/messages/types';
 import { getServerQueryClient } from '@/lib/queryClient-server';
 import { queryKeys } from '@/lib/queryKeys';
+import { PaginatedResponse } from '@/lib/types';
 
 interface ConversationIdPageProps {
   params: Promise<{ conversationId: string }>;
@@ -18,15 +21,19 @@ const ConversationIdPage = async ({ params }: ConversationIdPageProps) => {
     queryFn: () => getConversationById(conversationId)
   });
 
+  await queryClient.prefetchInfiniteQuery({
+    queryKey: queryKeys.messages.list(conversationId),
+    queryFn: ({ pageParam }) => getConversationMessages({ conversationId, pageParam }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage: PaginatedResponse<MessageWithDetails>) =>
+      lastPage.pagination.hasMore ? lastPage.pagination.nextCursor : undefined
+  });
+
   const dehydratedState = dehydrate(queryClient);
-
-  const data = queryClient.getQueryData(queryKeys.conversations.details(conversationId));
-
-  console.log(data);
 
   return (
     <HydrationBoundary state={dehydratedState}>
-      <MessagePageContent />
+      <ConversationIdPageContent conversationId={conversationId} />
     </HydrationBoundary>
   );
 };

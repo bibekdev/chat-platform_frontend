@@ -2,11 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 
+import { useConversationListSocket } from '../../hooks';
 import { Conversation } from '../../types';
 import { ConversationList } from './conversation-list';
 
 export const ConversationSidebar = () => {
   const router = useRouter();
+
+  useConversationListSocket();
 
   const handleConversationClick = (conversation: Conversation) => {
     router.push(`/conversations/${conversation.id}`);
