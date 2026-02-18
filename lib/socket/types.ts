@@ -1,3 +1,4 @@
+import { PublicUser } from '@/features/conversations/types';
 import { MessageWithDetails } from '@/features/messages/types';
 
 export const SOCKET_EVENTS = {
@@ -19,9 +20,12 @@ export const CONVERSATION_EVENTS = {
   SEND_MESSAGE: 'message:send',
   JOIN_CONVERSATION: 'conversation:join',
   LEAVE_CONVERSATION: 'conversation:leave',
+  TYPING_START: 'typing:start',
+  TYPING_STOP: 'typing:stop',
 
   // SERVER -> CLIENT
-  NEW_MESSAGE: 'message:new'
+  NEW_MESSAGE: 'message:new',
+  USER_TYPING: 'user:typing'
 } as const;
 
 export type SocketEvent = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
@@ -35,4 +39,15 @@ export interface SocketResponse<T = unknown> {
 export interface NewMessageEvent {
   conversationId: string;
   message: MessageWithDetails;
+}
+
+export type TypingEvent = {
+  conversationId: string;
+  user: PublicUser;
+  isTyping: boolean;
+};
+
+export interface TypingUser {
+  user: PublicUser;
+  timestamp: number;
 }

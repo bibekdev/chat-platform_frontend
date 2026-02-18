@@ -2,7 +2,8 @@
 
 import { useAuthUser } from '@/features/auth/hooks';
 import { MessageHeader, MessageList, MessageInput } from '@/features/messages/components';
-import { useSendMessage } from '@/features/messages/hooks';
+import { TypingIndicator } from '@/features/messages/components';
+import { useSendMessage, useTypingIndicator } from '@/features/messages/hooks';
 import { useConversationRoom, useConversationSocket } from '../hooks';
 
 interface ConversationIdPageContentProps {
@@ -18,10 +19,11 @@ export const ConversationIdPageContent = ({
   useConversationSocket(conversationId);
 
   const { sendMessageOptimistic } = useSendMessage(conversationId);
+  const { typingUsers, startTyping, stopTyping } = useTypingIndicator(conversationId);
 
   const handleSendMessage = async (content: string) => {
     if (!user) return;
-
+    stopTyping();
     await sendMessageOptimistic(
       { content, type: 'text' },
       { id: user.id, name: user.name, email: user.email, avatar: user.avatar }
@@ -32,8 +34,12 @@ export const ConversationIdPageContent = ({
     <div className='flex-1 flex flex-col h-full'>
       <MessageHeader conversationId={conversationId} />
       <MessageList conversationId={conversationId} />
+      <TypingIndicator users={typingUsers} />
       <div className='border-t p-4'>
-        <MessageInput onSendMessage={handleSendMessage} />
+        <MessageInput
+          startTyping={startTyping}
+          onSendMessage={handleSendMessage}
+        />
       </div>
     </div>
   );

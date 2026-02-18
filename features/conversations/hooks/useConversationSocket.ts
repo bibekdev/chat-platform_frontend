@@ -1,7 +1,7 @@
 import { InfiniteData, useQueryClient } from '@tanstack/react-query';
 
 import { MessageWithDetails } from '@/features/messages/types';
-import { useSocketEvent, useSocketEvents } from '@/hooks';
+import { useSocketEvents } from '@/hooks';
 import { queryKeys } from '@/lib/queryKeys';
 import { CONVERSATION_EVENTS, NewMessageEvent } from '@/lib/socket';
 import { PaginatedResponse } from '@/lib/types';

@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 
 import { SendIcon } from 'lucide-react';
@@ -7,9 +9,10 @@ import { Input } from '@/components/ui/input';
 
 interface MessageInputProps {
   onSendMessage: (content: string) => void;
+  startTyping: () => void;
 }
 
-export const MessageInput = ({ onSendMessage }: MessageInputProps) => {
+export const MessageInput = ({ onSendMessage, startTyping }: MessageInputProps) => {
   const [content, setContent] = React.useState('');
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -21,6 +24,7 @@ export const MessageInput = ({ onSendMessage }: MessageInputProps) => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    startTyping();
     setContent(e.target.value);
   };
 
