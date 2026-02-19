@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import React from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
-import { MessageSquareIcon } from 'lucide-react';
+import { MessageSquareIcon, PencilIcon } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -21,6 +21,7 @@ import { MessageWithDetails } from '../types';
 
 interface MessageListProps {
   conversationId: string;
+  onStartEdit?: (message: MessageWithDetails) => void;
 }
 
 function formatDateLabel(dateString: string) {
@@ -50,7 +51,7 @@ function groupMessageByDate(messages: MessageWithDetails[]) {
   return groups;
 }
 
-export const MessageList = ({ conversationId }: MessageListProps) => {
+export const MessageList = ({ conversationId, onStartEdit }: MessageListProps) => {
   const { data: user } = useAuthUser();
   const { data, isLoading, loadMoreRef, isFetchingNextPage, error } =
     useGetMessages(conversationId);
@@ -196,12 +197,21 @@ export const MessageList = ({ conversationId }: MessageListProps) => {
                 index < group.messages.length - 1 ? group.messages[index + 1] : null;
               const isFirstInGroup = prevMessage?.senderId !== message.senderId;
               const isLastInGroup = nextMessage?.senderId !== message.senderId;
+              const canEdit = isOwn && !message.isDeleted && message.content;
 
               if (isOwn) {
                 return (
                   <div
                     key={message.id}
                     className={cn('flex justify-end', isFirstInGroup && 'mt-3')}>
+                    {canEdit && (
+                      <button
+                        onClick={() => onStartEdit?.(message)}
+                        className='p-1 rounded-md text-muted-foreground hover:text-foreground'>
+                        <PencilIcon className='size-3.5' />
+                      </button>
+                    )}
+
                     <div className='flex flex-col items-end max-w-[70%]'>
                       <div
                         className={cn(
@@ -240,11 +250,10 @@ export const MessageList = ({ conversationId }: MessageListProps) => {
                         )}
                       </div>
 
-                      {isLastInGroup && (
-                        <span className='text-[10px] text-muted-foreground mt-0.5 mr-1'>
-                          {formatTime(message.createdAt)}
-                        </span>
-                      )}
+                      <span className='text-[10px] text-muted-foreground mt-0.5 mr-1'>
+                        {message.isEdited && <span className='italic mr-1'>edited</span>}
+                        {isLastInGroup && formatTime(message.createdAt)}
+                      </span>
                     </div>
                   </div>
                 );
@@ -317,11 +326,10 @@ export const MessageList = ({ conversationId }: MessageListProps) => {
                       )}
                     </div>
 
-                    {isLastInGroup && (
-                      <span className='text-[10px] text-muted-foreground mt-0.5 ml-1'>
-                        {formatTime(message.createdAt)}
-                      </span>
-                    )}
+                    <span className='text-[10px] text-muted-foreground mt-0.5 mr-1'>
+                      {message.isEdited && <span className='italic mr-1'>edited</span>}
+                      {isLastInGroup && formatTime(message.createdAt)}
+                    </span>
                   </div>
                 </div>
               );

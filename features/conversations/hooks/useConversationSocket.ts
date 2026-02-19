@@ -3,7 +3,7 @@ import { InfiniteData, useQueryClient } from '@tanstack/react-query';
 import { MessageWithDetails } from '@/features/messages/types';
 import { useSocketEvents } from '@/hooks';
 import { queryKeys } from '@/lib/queryKeys';
-import { CONVERSATION_EVENTS, NewMessageEvent } from '@/lib/socket';
+import { CONVERSATION_EVENTS, MessageUpdatedEvent, NewMessageEvent } from '@/lib/socket';
 import { PaginatedResponse } from '@/lib/types';
 
 export const useConversationSocket = (conversationId: string) => {
@@ -54,9 +54,29 @@ export const useConversationSocket = (conversationId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.conversations.list() });
   };
 
+  const handleMessageUpdated = (event: MessageUpdatedEvent) => {
+    if (event.conversationId !== conversationId) return;
+
+    queryClient.setQueryData<InfiniteData<PaginatedResponse<MessageWithDetails>>>(
+      queryKeys.messages.list(event.conversationId),
+      oldData => {
+        if (!oldData) return oldData;
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map(page => ({
+            ...page,
+            data: page.data.map(m => (m.id === event.message.id ? event.message : m))
+          }))
+        };
+      }
+    );
+  };
+
   useSocketEvents(
     {
-      [CONVERSATION_EVENTS.NEW_MESSAGE]: handleNewMessage
+      [CONVERSATION_EVENTS.NEW_MESSAGE]: handleNewMessage,
+      [CONVERSATION_EVENTS.MESSAGE_UPDATED]: handleMessageUpdated
     },
     enabled
   );

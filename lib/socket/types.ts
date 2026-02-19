@@ -22,10 +22,13 @@ export const CONVERSATION_EVENTS = {
   LEAVE_CONVERSATION: 'conversation:leave',
   TYPING_START: 'typing:start',
   TYPING_STOP: 'typing:stop',
+  EDIT_MESSAGE: 'message:edit',
+  DELETE_MESSAGE: 'message:delete',
 
   // SERVER -> CLIENT
   NEW_MESSAGE: 'message:new',
-  USER_TYPING: 'user:typing'
+  USER_TYPING: 'user:typing',
+  MESSAGE_UPDATED: 'message:updated'
 } as const;
 
 export type SocketEvent = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
@@ -51,3 +54,8 @@ export interface TypingUser {
   user: PublicUser;
   timestamp: number;
 }
+
+export type MessageUpdatedEvent = {
+  conversationId: string;
+  message: MessageWithDetails;
+};
