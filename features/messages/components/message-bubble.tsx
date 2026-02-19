@@ -1,10 +1,21 @@
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { BanIcon, ReplyIcon } from 'lucide-react';
+import {
+  ArchiveIcon,
+  BanIcon,
+  DownloadIcon,
+  FileAudioIcon,
+  FileIcon,
+  FileSpreadsheetIcon,
+  FileTextIcon,
+  FileVideoIcon,
+  LucideIcon,
+  ReplyIcon
+} from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn, getUserInitials } from '@/lib/utils';
-import { MessageWithDetails, MessageWithSender } from '../types';
+import { MessageAttachment, MessageWithDetails, MessageWithSender } from '../types';
 import { MessageActions } from './message-actions';
 
 interface MessageBubbleProps {
@@ -48,6 +59,68 @@ function ReplyQuote({
         </div>
       </div>
     </div>
+  );
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+
+function getFileMeta(mime: string): { icon: LucideIcon; bg: string } {
+  if (mime === 'application/pdf') return { icon: FileTextIcon, bg: 'bg-red-500' };
+  if (mime.startsWith('video/')) return { icon: FileVideoIcon, bg: 'bg-purple-500' };
+  if (mime.startsWith('audio/')) return { icon: FileAudioIcon, bg: 'bg-amber-500' };
+  if (
+    mime.includes('zip') ||
+    mime.includes('rar') ||
+    mime.includes('tar') ||
+    mime.includes('7z') ||
+    mime.includes('compressed') ||
+    mime.includes('archive')
+  )
+    return { icon: ArchiveIcon, bg: 'bg-yellow-600' };
+  if (mime.includes('spreadsheet') || mime.includes('excel') || mime === 'text/csv')
+    return { icon: FileSpreadsheetIcon, bg: 'bg-green-600' };
+  if (
+    mime.startsWith('text/') ||
+    mime.includes('document') ||
+    mime.includes('msword') ||
+    mime.includes('pdf')
+  )
+    return { icon: FileTextIcon, bg: 'bg-blue-500' };
+  return { icon: FileIcon, bg: 'bg-muted-foreground' };
+}
+
+function FileAttachmentCard({ attachment }: { attachment: MessageAttachment }) {
+  const { icon: Icon, bg } = getFileMeta(attachment.fileType);
+
+  return (
+    <a
+      href={attachment.fileUrl}
+      target='_blank'
+      rel='noopener noreferrer'
+      className='flex items-center gap-3 rounded-xl border bg-card p-2.5 min-w-52 hover:bg-accent transition-colors'>
+      <div
+        className={cn(
+          'flex items-center justify-center size-10 rounded-lg shrink-0',
+          bg
+        )}>
+        <Icon className='size-5 text-white' />
+      </div>
+
+      <div className='min-w-0 flex-1'>
+        <p className='text-sm font-medium truncate text-foreground'>
+          {attachment.fileName}
+        </p>
+        <p className='text-xs text-muted-foreground'>
+          {formatFileSize(attachment.fileSize)}
+        </p>
+      </div>
+      <DownloadIcon className='size-4 shrink-0 text-muted-foreground' />
+    </a>
   );
 }
 
@@ -112,7 +185,7 @@ export function MessageBubble({
   );
 
   const attachments = hasAttachments && (
-    <div className={cn('space-y-1', message.content && 'mt-1')}>
+    <div className='space-y-1.5'>
       {message.attachments!.map((attachment, i) => (
         <div key={i}>
           {attachment.fileType.startsWith('image/') ? (
@@ -124,16 +197,7 @@ export function MessageBubble({
               className='rounded-lg max-w-full max-h-64 object-cover'
             />
           ) : (
-            <a
-              href={attachment.fileUrl}
-              target='_blank'
-              rel='noopener noreferrer'
-              className={cn(
-                'flex items-center gap-2 text-xs underline',
-                isOwn ? 'text-primary-foreground/80' : 'text-muted-foreground'
-              )}>
-              {attachment.fileName}
-            </a>
+            <FileAttachmentCard attachment={attachment} />
           )}
         </div>
       ))}
@@ -170,14 +234,18 @@ export function MessageBubble({
               className='bg-primary/10'
             />
           )}
-          <div
-            className={cn(
-              'rounded-2xl px-3 py-2 text-sm wrap-break-word bg-primary text-primary-foreground',
-              corners
-            )}>
-            {message.content && <p>{message.content}</p>}
-            {attachments}
-          </div>
+          {message.content && (
+            <div
+              className={cn(
+                'rounded-2xl px-3 py-2 text-sm wrap-break-word bg-primary text-primary-foreground',
+                corners
+              )}>
+              <p>{message.content}</p>
+            </div>
+          )}
+          {hasAttachments && (
+            <div className={cn(message.content && 'mt-1.5')}>{attachments}</div>
+          )}
           {timestamp}
         </div>
       </div>

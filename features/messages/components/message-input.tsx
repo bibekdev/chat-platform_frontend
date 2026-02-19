@@ -1,18 +1,37 @@
 'use client';
 
+import Image from 'next/image';
+
 import React from 'react';
 
-import { CheckIcon, PencilIcon, ReplyIcon, SendIcon, XIcon } from 'lucide-react';
+import {
+  CheckIcon,
+  FileIcon,
+  PaperclipIcon,
+  PencilIcon,
+  ReplyIcon,
+  SendIcon,
+  XIcon
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MessageWithDetails } from '../types';
+import { Spinner } from '@/components/ui/spinner';
+import { useUploadThing } from '@/lib/uploadthing';
+import { MessageAttachment, MessageWithDetails } from '../types';
+
+interface UploadedFile {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
 
 interface MessageInputProps {
-  onSendMessage: (content: string) => void;
+  onSendMessage: (content: string, attachments?: MessageAttachment[]) => Promise<void>;
   startTyping: () => void;
   editingMessage: { id: string; content: string } | null;
-  onEditMessage: (content: string) => void;
+  onEditMessage: (content: string) => Promise<void>;
   onCancelEdit: () => void;
   replyingToMessage: MessageWithDetails | null;
   onCancelReply: () => void;
@@ -28,8 +47,12 @@ export const MessageInput = ({
   onCancelReply
 }: MessageInputProps) => {
   const [content, setContent] = React.useState('');
+  const [uploadedFiles, setUploadedFiles] = React.useState<UploadedFile[]>([]);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const isEditing = !!editingMessage;
+
+  const { startUpload, isUploading } = useUploadThing('messageAttachment');
 
   const prevEditIdRef = React.useRef<string | null>(null);
 
@@ -59,20 +82,65 @@ export const MessageInput = ({
     setContent(e.target.value);
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+    e.target.value = '';
+
+    try {
+      const result = await startUpload(fileArray);
+      if (result) {
+        setUploadedFiles(prev => [
+          ...prev,
+          ...result.map(f => ({
+            name: f.name,
+            url: f.ufsUrl,
+            type: f.type,
+            size: f.size
+          }))
+        ]);
+      }
+    } catch (error) {
+      // Upload failed - useUploadThing handles the error internally
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSendMessage = () => {
-    if (!content.trim()) return;
+    const hasText = content.trim().length > 0;
+    const hasAttachments = uploadedFiles.length > 0;
+
+    if (isUploading) return;
 
     if (isEditing && onEditMessage) {
-      if (content.trim() === editingMessage.content) {
+      if (!hasText || content.trim() === editingMessage.content) {
         onCancelEdit();
         return;
       }
       onEditMessage(content.trim());
-    } else {
-      onSendMessage(content.trim());
+      setContent('');
+      return;
     }
 
+    if (!hasText && !hasAttachments) return;
+
+    const attachments: MessageAttachment[] | undefined = hasAttachments
+      ? uploadedFiles.map(f => ({
+          fileName: f.name,
+          fileUrl: f.url,
+          fileType: f.type,
+          fileSize: f.size
+        }))
+      : undefined;
+
+    onSendMessage(content, attachments);
     setContent('');
+    setUploadedFiles([]);
   };
 
   const handleCancel = () => {
@@ -125,7 +193,65 @@ export const MessageInput = ({
           </button>
         </div>
       )}
+
+      {(uploadedFiles.length > 0 || isUploading) && !isEditing && (
+        <div className='flex items-center gap-2 px-1 overflow-x-auto animate-in fade-in slide-in-from-bottom-1 duration-150'>
+          {uploadedFiles.map((file, i) => (
+            <div
+              key={i}
+              className='relative group shrink-0'>
+              {file.type.startsWith('image/') ? (
+                <Image
+                  src={file.url}
+                  alt={file.name}
+                  width={64}
+                  height={64}
+                  className='size-16 rounded-lg object-cover border'
+                />
+              ) : (
+                <div className='flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2 text-xs h-16'>
+                  <FileIcon className='size-3.5 shrink-0 text-muted-foreground' />
+                  <span className='max-w-20 truncate'>{file.name}</span>
+                </div>
+              )}
+              <button
+                onClick={() => handleRemoveFile(i)}
+                className='absolute -top-1.5 -right-1.5 size-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity'>
+                <XIcon className='size-2.5' />
+              </button>
+            </div>
+          ))}
+
+          {isUploading && (
+            <div className='flex items-center gap-1.5 text-xs text-muted-foreground h-16 px-2'>
+              <Spinner className='size-4' />
+              <span>Uploading...</span>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className='flex items-center gap-2'>
+        {!isEditing && (
+          <>
+            <input
+              type='file'
+              ref={fileInputRef}
+              multiple
+              className='hidden'
+              onChange={handleFileSelect}
+              accept='image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar'
+            />
+            <Button
+              variant={'ghost'}
+              size={'icon'}
+              className='rounded-full size-10 shrink-0'
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}>
+              <PaperclipIcon className='size-4' />
+            </Button>
+          </>
+        )}
         <Input
           ref={inputRef}
           onChange={handleChange}

@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { useAuthUser } from '@/features/auth/hooks';
-import { MessageWithDetails } from '../types';
+import { MessageAttachment, MessageType, MessageWithDetails } from '../types';
 import { useDeleteMessage } from './useDeleteMessage';
 import { useEditMessage } from './useEditMessage';
 import { useSendMessage } from './useSendMessage';
@@ -21,13 +21,21 @@ export function useMessageActions(conversationId: string) {
   const { deleteMessage } = useDeleteMessage(conversationId);
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(conversationId);
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (
+    content: string,
+    attachments?: MessageAttachment[]
+  ) => {
     if (!user) return;
     stopTyping();
     const replyTo = replyingToMessage;
     setReplyingToMessage(null);
+
+    const type: MessageType = attachments?.length
+      ? inferMessageType(attachments)
+      : 'text';
+
     await sendMessageOptimistic(
-      { content, type: 'text', replyToId: replyTo?.id },
+      { content, type: 'text', replyToId: replyTo?.id, attachments },
       { id: user.id, name: user.name, email: user.email, avatar: user.avatar },
       replyTo ?? undefined
     );
@@ -78,4 +86,13 @@ export function useMessageActions(conversationId: string) {
     handleEditMessage,
     handleDeleteMessage
   };
+}
+
+function inferMessageType(attachments: MessageAttachment[]): MessageType {
+  const mime = attachments[0]?.fileType ?? '';
+  if (mime.startsWith('image/')) return 'image';
+  if (mime.startsWith('video/')) return 'video';
+  if (mime.startsWith('audio/')) return 'audio';
+
+  return 'file';
 }
