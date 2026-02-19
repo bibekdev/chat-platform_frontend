@@ -3,7 +3,13 @@
 import Image from 'next/image';
 import React from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
-import { BanIcon, MessageSquareIcon, PencilIcon, Trash2Icon } from 'lucide-react';
+import {
+  BanIcon,
+  MessageSquareIcon,
+  PencilIcon,
+  Trash2Icon,
+  ReplyIcon
+} from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -29,6 +35,7 @@ interface MessageListProps {
   conversationId: string;
   onStartEdit: (message: MessageWithDetails) => void;
   onDeleteMessage: (messageId: string, forEveryone: boolean) => void;
+  onStartReply: (message: MessageWithDetails) => void;
 }
 
 function formatDateLabel(dateString: string) {
@@ -61,7 +68,8 @@ function groupMessageByDate(messages: MessageWithDetails[]) {
 export const MessageList = ({
   conversationId,
   onStartEdit,
-  onDeleteMessage
+  onDeleteMessage,
+  onStartReply
 }: MessageListProps) => {
   const { data: user } = useAuthUser();
   const { data, isLoading, loadMoreRef, isFetchingNextPage, error } =
@@ -210,6 +218,7 @@ export const MessageList = ({
               const isLastInGroup = nextMessage?.senderId !== message.senderId;
               const canEdit = isOwn && !message.isDeleted && message.content;
               const canDelete = !message.isDeleted;
+              const canReply = !message.isDeleted;
 
               // -------- Deleted for everyone placeholder ---------
               if (message.isDeleted && message.deletedForEveryone) {
@@ -238,8 +247,15 @@ export const MessageList = ({
                       'group/msg flex justify-end',
                       isFirstInGroup && 'mt-3'
                     )}>
-                    {canDelete && (
+                    {(canDelete || canReply) && (
                       <div className='flex items-center gap-0.5 mr-1 opacity-0 group-hover/msg:opacity-100 transition-opacity'>
+                        {canReply && (
+                          <button
+                            onClick={() => onStartReply(message)}
+                            className='p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors'>
+                            <ReplyIcon className='size-3.5' />
+                          </button>
+                        )}
                         {canEdit && (
                           <button
                             onClick={() => onStartEdit(message)}
@@ -274,6 +290,18 @@ export const MessageList = ({
                     )}
 
                     <div className='flex flex-col items-end max-w-[70%]'>
+                      {message.replyTo && (
+                        <div className='mb-1 max-w-full rounded-xl bg-primary/10 px-3 py-1.5 text-xs text-muted-foreground'>
+                          <span className='font-medium text-foreground'>
+                            {message.replyTo.sender.name ?? 'Unknown'}
+                          </span>
+                          <p className='truncate'>
+                            {message.replyTo.isDeleted
+                              ? 'This message was deleted'
+                              : (message.replyTo.content ?? 'Attachment')}
+                          </p>
+                        </div>
+                      )}
                       <div
                         className={cn(
                           'rounded-2xl px-3 py-2 text-sm wrap-break-word bg-primary text-primary-foreground',
@@ -350,6 +378,19 @@ export const MessageList = ({
                       </span>
                     )}
 
+                    {message.replyTo && (
+                      <div className='mb-1 max-w-full rounded-xl bg-primary/10 px-3 py-1.5 text-xs text-muted-foreground'>
+                        <span className='font-medium text-foreground'>
+                          {message.replyTo.sender.name ?? 'Unknown'}
+                        </span>
+                        <p className='truncate'>
+                          {message.replyTo.isDeleted
+                            ? 'This message was deleted'
+                            : (message.replyTo.content ?? 'Attachment')}
+                        </p>
+                      </div>
+                    )}
+
                     <div className='flex items-center gap-0.5'>
                       <div
                         className={cn(
@@ -388,25 +429,34 @@ export const MessageList = ({
                         )}
                       </div>
 
-                      {canDelete && (
+                      {(canDelete || canReply) && (
                         <div className='opacity-0 group-hover/msg:opacity-100 transition-opacity'>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger
-                              asChild
-                              className='focus-visible:outline-0'>
-                              <button className='p-1 rounded-md text-muted-foreground hover:text-destructive transition-colors'>
-                                <Trash2Icon className='size-3.5' />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                              align='start'
-                              side='top'>
-                              <DropdownMenuItem
-                                onClick={() => onDeleteMessage(message.id, false)}>
-                                Delete for me
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          {canReply && (
+                            <button
+                              onClick={() => onStartReply(message)}
+                              className='p-1 rounded-md text-muted-foreground hover:text-destructive transition-colors'>
+                              <ReplyIcon className='size-3.5' />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                asChild
+                                className='focus-visible:outline-0'>
+                                <button className='p-1 rounded-md text-muted-foreground hover:text-destructive transition-colors'>
+                                  <Trash2Icon className='size-3.5' />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align='start'
+                                side='top'>
+                                <DropdownMenuItem
+                                  onClick={() => onDeleteMessage(message.id, false)}>
+                                  Delete for me
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
                       )}
                     </div>

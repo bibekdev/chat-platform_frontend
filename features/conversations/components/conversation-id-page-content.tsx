@@ -29,6 +29,8 @@ export const ConversationIdPageContent = ({
     id: string;
     content: string;
   } | null>(null);
+  const [replyingToMessage, setReplyingToMessage] =
+    React.useState<MessageWithDetails | null>(null);
   const { data: user } = useAuthUser();
 
   useConversationRoom(conversationId);
@@ -42,10 +44,22 @@ export const ConversationIdPageContent = ({
   const handleSendMessage = async (content: string) => {
     if (!user) return;
     stopTyping();
+    const replyTo = replyingToMessage;
+    setReplyingToMessage(null);
     await sendMessageOptimistic(
-      { content, type: 'text' },
-      { id: user.id, name: user.name, email: user.email, avatar: user.avatar }
+      { content, type: 'text', replyToId: replyTo?.id },
+      { id: user.id, name: user.name, email: user.email, avatar: user.avatar },
+      replyTo ?? undefined
     );
+  };
+
+  const handleStartReply = (message: MessageWithDetails) => {
+    setReplyingToMessage(message);
+    setEditingMessage(null);
+  };
+
+  const handleCancelReply = () => {
+    setReplyingToMessage(null);
   };
 
   const handleStartEdit = (message: MessageWithDetails) => {
@@ -78,6 +92,7 @@ export const ConversationIdPageContent = ({
         onStartEdit={handleStartEdit}
         conversationId={conversationId}
         onDeleteMessage={handleDeleteMessage}
+        onStartReply={handleStartReply}
       />
       <TypingIndicator users={typingUsers} />
       <div className='border-t p-4'>
@@ -87,6 +102,8 @@ export const ConversationIdPageContent = ({
           editingMessage={editingMessage}
           onEditMessage={handleEditMessage}
           onCancelEdit={handleCancelEdit}
+          replyingToMessage={replyingToMessage}
+          onCancelReply={handleCancelReply}
         />
       </div>
     </div>

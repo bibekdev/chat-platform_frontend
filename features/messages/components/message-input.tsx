@@ -2,11 +2,11 @@
 
 import React from 'react';
 
-import { CheckIcon, PencilIcon, SendIcon, XIcon } from 'lucide-react';
-import { set } from 'zod';
+import { CheckIcon, PencilIcon, ReplyIcon, SendIcon, XIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MessageWithDetails } from '../types';
 
 interface MessageInputProps {
   onSendMessage: (content: string) => void;
@@ -14,6 +14,8 @@ interface MessageInputProps {
   editingMessage: { id: string; content: string } | null;
   onEditMessage: (content: string) => void;
   onCancelEdit: () => void;
+  replyingToMessage: MessageWithDetails | null;
+  onCancelReply: () => void;
 }
 
 export const MessageInput = ({
@@ -21,7 +23,9 @@ export const MessageInput = ({
   startTyping,
   editingMessage,
   onEditMessage,
-  onCancelEdit
+  onCancelEdit,
+  replyingToMessage,
+  onCancelReply
 }: MessageInputProps) => {
   const [content, setContent] = React.useState('');
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -37,10 +41,10 @@ export const MessageInput = ({
   }
 
   React.useEffect(() => {
-    if (editingMessage) {
+    if (editingMessage || replyingToMessage) {
       inputRef.current?.focus();
     }
-  }, [editingMessage]);
+  }, [editingMessage, replyingToMessage]);
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     const input = e.target;
@@ -81,14 +85,35 @@ export const MessageInput = ({
       e.preventDefault();
       handleSendMessage();
     }
-    if (e.key === 'Escape' && isEditing) {
-      e.preventDefault();
-      handleCancel();
+    if (e.key === 'Escape') {
+      if (isEditing) {
+        e.preventDefault();
+        handleCancel();
+      } else if (replyingToMessage) {
+        e.preventDefault();
+        onCancelReply();
+      }
     }
   };
 
   return (
     <div className='w-full flex flex-col gap-2'>
+      {replyingToMessage && !isEditing && (
+        <div className=' flex items-center gap-2 px-1 text-xs text-muted-foreground animate-in fade-in slide-in-from-bottom-1 duration-150'>
+          <ReplyIcon className='size-3' />
+          <div className='flex-1 min-w-0'>
+            <span className='font-medium text-foreground'>
+              {replyingToMessage.sender.name ?? 'Unknown'}
+            </span>
+            <p className='truncate'>{replyingToMessage.content ?? 'Attachment'}</p>
+          </div>
+          <button
+            className='hover:text-foreground transition-colors'
+            onClick={onCancelReply}>
+            <XIcon className='size-3.5' />
+          </button>
+        </div>
+      )}
       {isEditing && (
         <div className=' flex items-center gap-2 px-1 text-xs text-muted-foreground animate-in fade-in slide-in-from-bottom-1 duration-150'>
           <PencilIcon className='size-3' />

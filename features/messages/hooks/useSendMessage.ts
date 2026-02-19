@@ -7,7 +7,7 @@ import { useSocket } from '@/hooks';
 import { queryKeys } from '@/lib/queryKeys';
 import { CONVERSATION_EVENTS } from '@/lib/socket';
 import { PaginatedResponse } from '@/lib/types';
-import { CreateMessageDto, MessageWithDetails } from '../types';
+import { CreateMessageDto, MessageWithDetails, MessageWithSender } from '../types';
 
 export function useSendMessage(conversationId: string) {
   const { emit, isConnected } = useSocket();
@@ -36,14 +36,38 @@ export function useSendMessage(conversationId: string) {
 
   const sendMessageOptimistic = async (
     data: CreateMessageDto,
-    currentUser: PublicUser
+    currentUser: PublicUser,
+    replyToMessage?: MessageWithDetails
   ) => {
     const tempId = `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    const replyTo: MessageWithSender | undefined = replyToMessage
+      ? {
+          id: replyToMessage.id,
+          conversationId: replyToMessage.conversationId,
+          senderId: replyToMessage.senderId,
+          content: replyToMessage.content,
+          type: replyToMessage.type,
+          replyToId: replyToMessage.replyToId,
+          forwardedFromId: replyToMessage.forwardedFromId,
+          isEdited: replyToMessage.isEdited,
+          editedAt: replyToMessage.editedAt,
+          isDeleted: replyToMessage.isDeleted,
+          deletedAt: replyToMessage.deletedAt,
+          deletedForEveryone: replyToMessage.deletedForEveryone,
+          createdAt: replyToMessage.createdAt,
+          updatedAt: replyToMessage.updatedAt,
+          metadata: replyToMessage.metadata,
+          sender: replyToMessage.sender
+        }
+      : undefined;
+
     const optimisticMessage: MessageWithDetails = {
       id: tempId,
-      content: data.content,
+      content: data.content ?? null,
       type: data.type ?? 'text',
       replyToId: data.replyToId ?? null,
+      replyTo: replyTo ?? undefined,
       attachments: data.attachments ?? undefined,
       sender: currentUser,
       conversationId,
