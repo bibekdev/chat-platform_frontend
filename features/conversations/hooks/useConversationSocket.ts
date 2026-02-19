@@ -3,7 +3,12 @@ import { InfiniteData, useQueryClient } from '@tanstack/react-query';
 import { MessageWithDetails } from '@/features/messages/types';
 import { useSocketEvents } from '@/hooks';
 import { queryKeys } from '@/lib/queryKeys';
-import { CONVERSATION_EVENTS, MessageUpdatedEvent, NewMessageEvent } from '@/lib/socket';
+import {
+  CONVERSATION_EVENTS,
+  MessageDeletedEvent,
+  MessageUpdatedEvent,
+  NewMessageEvent
+} from '@/lib/socket';
 import { PaginatedResponse } from '@/lib/types';
 
 export const useConversationSocket = (conversationId: string) => {
@@ -73,10 +78,43 @@ export const useConversationSocket = (conversationId: string) => {
     );
   };
 
+  const handleMessageDeleted = (event: MessageDeletedEvent) => {
+    if (event.conversationId !== conversationId) return;
+
+    if (event.deletedForEveryone) {
+      queryClient.setQueryData<InfiniteData<PaginatedResponse<MessageWithDetails>>>(
+        queryKeys.messages.list(event.conversationId),
+        oldData => {
+          if (!oldData) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map(page => ({
+              ...page,
+              data: page.data.map(m =>
+                m.id === event.messageId
+                  ? {
+                      ...m,
+                      content: null,
+                      attachments: [],
+                      isDeleted: true,
+                      deletedForEveryone: true,
+                      deletedAt: new Date().toISOString()
+                    }
+                  : m
+              )
+            }))
+          };
+        }
+      );
+    }
+  };
+
   useSocketEvents(
     {
       [CONVERSATION_EVENTS.NEW_MESSAGE]: handleNewMessage,
-      [CONVERSATION_EVENTS.MESSAGE_UPDATED]: handleMessageUpdated
+      [CONVERSATION_EVENTS.MESSAGE_UPDATED]: handleMessageUpdated,
+      [CONVERSATION_EVENTS.MESSAGE_DELETED]: handleMessageDeleted
     },
     enabled
   );

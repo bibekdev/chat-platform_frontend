@@ -18,7 +18,7 @@ export type MessageAttachment = {
 
 export type Message = {
   id: string;
-  content?: string;
+  content: string | null;
   type: MessageType;
   replyToId: string | null;
   forwardedFromId: string | null;

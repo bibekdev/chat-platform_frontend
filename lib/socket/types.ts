@@ -28,7 +28,8 @@ export const CONVERSATION_EVENTS = {
   // SERVER -> CLIENT
   NEW_MESSAGE: 'message:new',
   USER_TYPING: 'user:typing',
-  MESSAGE_UPDATED: 'message:updated'
+  MESSAGE_UPDATED: 'message:updated',
+  MESSAGE_DELETED: 'message:deleted'
 } as const;
 
 export type SocketEvent = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
@@ -58,4 +59,10 @@ export interface TypingUser {
 export type MessageUpdatedEvent = {
   conversationId: string;
   message: MessageWithDetails;
+};
+
+export type MessageDeletedEvent = {
+  conversationId: string;
+  messageId: string;
+  deletedForEveryone: boolean;
 };

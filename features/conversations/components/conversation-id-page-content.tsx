@@ -10,6 +10,7 @@ import {
   TypingIndicator
 } from '@/features/messages/components';
 import {
+  useDeleteMessage,
   useEditMessage,
   useSendMessage,
   useTypingIndicator
@@ -35,6 +36,7 @@ export const ConversationIdPageContent = ({
 
   const { sendMessageOptimistic } = useSendMessage(conversationId);
   const { editMessage } = useEditMessage(conversationId);
+  const { deleteMessage } = useDeleteMessage(conversationId);
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(conversationId);
 
   const handleSendMessage = async (content: string) => {
@@ -62,12 +64,20 @@ export const ConversationIdPageContent = ({
     setEditingMessage(null);
   };
 
+  const handleDeleteMessage = async (messageId: string, forEveryone: boolean) => {
+    if (editingMessage?.id === messageId) {
+      setEditingMessage(null);
+    }
+    await deleteMessage({ messageId, forEveryone });
+  };
+
   return (
     <div className='flex-1 flex flex-col h-full'>
       <MessageHeader conversationId={conversationId} />
       <MessageList
         onStartEdit={handleStartEdit}
         conversationId={conversationId}
+        onDeleteMessage={handleDeleteMessage}
       />
       <TypingIndicator users={typingUsers} />
       <div className='border-t p-4'>

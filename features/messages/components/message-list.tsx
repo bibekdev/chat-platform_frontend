@@ -3,9 +3,15 @@
 import Image from 'next/image';
 import React from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
-import { MessageSquareIcon, PencilIcon } from 'lucide-react';
+import { BanIcon, MessageSquareIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import {
   Empty,
   EmptyDescription,
@@ -21,7 +27,8 @@ import { MessageWithDetails } from '../types';
 
 interface MessageListProps {
   conversationId: string;
-  onStartEdit?: (message: MessageWithDetails) => void;
+  onStartEdit: (message: MessageWithDetails) => void;
+  onDeleteMessage: (messageId: string, forEveryone: boolean) => void;
 }
 
 function formatDateLabel(dateString: string) {
@@ -51,7 +58,11 @@ function groupMessageByDate(messages: MessageWithDetails[]) {
   return groups;
 }
 
-export const MessageList = ({ conversationId, onStartEdit }: MessageListProps) => {
+export const MessageList = ({
+  conversationId,
+  onStartEdit,
+  onDeleteMessage
+}: MessageListProps) => {
   const { data: user } = useAuthUser();
   const { data, isLoading, loadMoreRef, isFetchingNextPage, error } =
     useGetMessages(conversationId);
@@ -198,18 +209,68 @@ export const MessageList = ({ conversationId, onStartEdit }: MessageListProps) =
               const isFirstInGroup = prevMessage?.senderId !== message.senderId;
               const isLastInGroup = nextMessage?.senderId !== message.senderId;
               const canEdit = isOwn && !message.isDeleted && message.content;
+              const canDelete = !message.isDeleted;
+
+              // -------- Deleted for everyone placeholder ---------
+              if (message.isDeleted && message.deletedForEveryone) {
+                return (
+                  <div
+                    key={message.id}
+                    className={cn(
+                      'flex',
+                      isOwn ? 'justify-end' : 'justify-start',
+                      isOwn ? '' : 'pl-10',
+                      isFirstInGroup && 'mt-3'
+                    )}>
+                    <div className='flex items-center gap-1.5 rounded-2xl border border-dashed border-border px-3 py-2 text-sm italic text-muted-foreground'>
+                      <BanIcon className='size-3.5' />
+                      <span>This message was deleted</span>
+                    </div>
+                  </div>
+                );
+              }
 
               if (isOwn) {
                 return (
                   <div
                     key={message.id}
-                    className={cn('flex justify-end', isFirstInGroup && 'mt-3')}>
-                    {canEdit && (
-                      <button
-                        onClick={() => onStartEdit?.(message)}
-                        className='p-1 rounded-md text-muted-foreground hover:text-foreground'>
-                        <PencilIcon className='size-3.5' />
-                      </button>
+                    className={cn(
+                      'group/msg flex justify-end',
+                      isFirstInGroup && 'mt-3'
+                    )}>
+                    {canDelete && (
+                      <div className='flex items-center gap-0.5 mr-1 opacity-0 group-hover/msg:opacity-100 transition-opacity'>
+                        {canEdit && (
+                          <button
+                            onClick={() => onStartEdit(message)}
+                            className='p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors'>
+                            <PencilIcon className='size-3.5' />
+                          </button>
+                        )}
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            asChild
+                            className='focus-visible:outline-0'>
+                            <button className='p-1 rounded-md text-muted-foreground hover:text-destructive transition-colors'>
+                              <Trash2Icon className='size-3.5' />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align='end'
+                            side='top'>
+                            <DropdownMenuItem
+                              onClick={() => onDeleteMessage(message.id, false)}>
+                              Delete for me
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              variant='destructive'
+                              onClick={() => onDeleteMessage(message.id, true)}>
+                              Delete for everyone
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     )}
 
                     <div className='flex flex-col items-end max-w-[70%]'>
@@ -221,7 +282,7 @@ export const MessageList = ({ conversationId, onStartEdit }: MessageListProps) =
                           isLastInGroup && !isFirstInGroup && 'rounded-br-md',
                           !isFirstInGroup && !isLastInGroup && 'rounded-r-md'
                         )}>
-                        {message.content}
+                        <p>{message.content}</p>
 
                         {message.attachments && message.attachments.length > 0 && (
                           <div className={cn('space-y-1', message.content && 'mt-1')}>
@@ -264,7 +325,7 @@ export const MessageList = ({ conversationId, onStartEdit }: MessageListProps) =
                 <div
                   key={message.id}
                   className={cn(
-                    'flex items-end gap-2 justify-start',
+                    'group/msg flex items-end gap-2 justify-start',
                     isFirstInGroup && 'mt-3'
                   )}>
                   {/* Avatar - only visible on last message in group*/}
@@ -289,39 +350,63 @@ export const MessageList = ({ conversationId, onStartEdit }: MessageListProps) =
                       </span>
                     )}
 
-                    <div
-                      className={cn(
-                        'rounded-2xl px-3 py-2 text-sm wrap-break-word bg-muted',
-                        isFirstInGroup && isLastInGroup && 'rounded-l-md',
-                        isFirstInGroup && !isLastInGroup && 'rounded-tl-md',
-                        isLastInGroup && !isFirstInGroup && 'rounded-bl-md',
-                        !isFirstInGroup && !isLastInGroup && 'rounded-l-md'
-                      )}>
-                      {message.content && <p>{message.content}</p>}
+                    <div className='flex items-center gap-0.5'>
+                      <div
+                        className={cn(
+                          'rounded-2xl px-3 py-2 text-sm wrap-break-word bg-muted',
+                          isFirstInGroup && isLastInGroup && 'rounded-l-md',
+                          isFirstInGroup && !isLastInGroup && 'rounded-tl-md',
+                          isLastInGroup && !isFirstInGroup && 'rounded-bl-md',
+                          !isFirstInGroup && !isLastInGroup && 'rounded-l-md'
+                        )}>
+                        {message.content && <p>{message.content}</p>}
 
-                      {message.attachments && message.attachments.length > 0 && (
-                        <div className={cn('space-y-1', message.content && 'mt-1')}>
-                          {message.attachments.map((attachment, i) => (
-                            <div key={i}>
-                              {attachment.fileType.startsWith('image/') ? (
-                                <Image
-                                  src={attachment.fileUrl}
-                                  alt={attachment.fileName}
-                                  width={400}
-                                  height={256}
-                                  className='rounded-lg max-w-full max-h-64 object-cover'
-                                />
-                              ) : (
-                                <a
-                                  href={attachment.fileUrl}
-                                  target='_blank'
-                                  rel='noopener noreferrer'
-                                  className='flex items-center gap-2 text-xs underline text-muted-foreground'>
-                                  {attachment.fileName}
-                                </a>
-                              )}
-                            </div>
-                          ))}
+                        {message.attachments && message.attachments.length > 0 && (
+                          <div className={cn('space-y-1', message.content && 'mt-1')}>
+                            {message.attachments.map((attachment, i) => (
+                              <div key={i}>
+                                {attachment.fileType.startsWith('image/') ? (
+                                  <Image
+                                    src={attachment.fileUrl}
+                                    alt={attachment.fileName}
+                                    width={400}
+                                    height={256}
+                                    className='rounded-lg max-w-full max-h-64 object-cover'
+                                  />
+                                ) : (
+                                  <a
+                                    href={attachment.fileUrl}
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                    className='flex items-center gap-2 text-xs underline text-muted-foreground'>
+                                    {attachment.fileName}
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {canDelete && (
+                        <div className='opacity-0 group-hover/msg:opacity-100 transition-opacity'>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              asChild
+                              className='focus-visible:outline-0'>
+                              <button className='p-1 rounded-md text-muted-foreground hover:text-destructive transition-colors'>
+                                <Trash2Icon className='size-3.5' />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align='start'
+                              side='top'>
+                              <DropdownMenuItem
+                                onClick={() => onDeleteMessage(message.id, false)}>
+                                Delete for me
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       )}
                     </div>
