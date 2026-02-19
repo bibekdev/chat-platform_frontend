@@ -1,8 +1,12 @@
 'use client';
 
 import { useAuthUser } from '@/features/auth/hooks';
-import { MessageHeader, MessageList, MessageInput } from '@/features/messages/components';
-import { TypingIndicator } from '@/features/messages/components';
+import {
+  MessageHeader,
+  MessageList,
+  MessageInput,
+  TypingIndicator
+} from '@/features/messages/components';
 import { useSendMessage, useTypingIndicator } from '@/features/messages/hooks';
 import { useConversationRoom, useConversationSocket } from '../hooks';
 
