@@ -27,6 +27,7 @@ export function ConversationCard({ conversation, onClick }: ConversationCardProp
     : null;
 
   const isActive = conversation.id === conversationId;
+  const hasUnread = (conversation.unreadCount ?? 0) > 0;
 
   return (
     <Card
@@ -42,7 +43,7 @@ export function ConversationCard({ conversation, onClick }: ConversationCardProp
           {isGroup ? (
             <>
               <AvatarImage src={conversation.avatarUrl || undefined} />
-              <AvatarFallback>
+              <AvatarFallback className='bg-primary/10'>
                 <Users className='size-5 text-muted-foreground' />
               </AvatarFallback>
             </>
@@ -60,7 +61,11 @@ export function ConversationCard({ conversation, onClick }: ConversationCardProp
         <div className='flex items-center justify-between gap-2'>
           <h3 className='font-medium truncate'>{displayName}</h3>
           {lastMessageTime && (
-            <span className='text-xs text-muted-foreground whitespace-nowrap'>
+            <span
+              className={cn(
+                'text-xs whitespace-nowrap',
+                hasUnread ? 'text-primary font-medium' : 'text-muted-foreground'
+              )}>
               {lastMessageTime}
             </span>
           )}
@@ -68,18 +73,30 @@ export function ConversationCard({ conversation, onClick }: ConversationCardProp
 
         {/* Last message preview */}
         <div className='flex items-center gap-1 mt-0.5'>
-          {conversation.lastMessage?.sender && (
-            <span className='text-sm text-muted-foreground truncate'>
-              {isGroup && (
-                <span className='font-medium'>
-                  {conversation.lastMessage.sender.name}:{' '}
-                </span>
-              )}
-              {lastMessageContent || getMessageTypeLabel(conversation.lastMessage.type)}
+          <span
+            className={cn(
+              'text-sm truncate flex-1',
+              hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'
+            )}>
+            {conversation.lastMessage?.sender ? (
+              <>
+                {isGroup && (
+                  <span className='font-medium'>
+                    {conversation.lastMessage.sender.name}:{' '}
+                  </span>
+                )}
+                {lastMessageContent || getMessageTypeLabel(conversation.lastMessage.type)}
+              </>
+            ) : (
+              !conversation.lastMessage && (
+                <span className='italic text-muted-foreground'>No messages yet</span>
+              )
+            )}
+          </span>
+          {hasUnread && (
+            <span className='flex items-center justify-center min-w-5 h-5 rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground'>
+              {conversation.unreadCount! > 99 ? '99+' : conversation.unreadCount}
             </span>
-          )}
-          {!conversation.lastMessage && (
-            <span className='text-sm text-muted-foreground italic'>No messages yet</span>
           )}
         </div>
       </div>

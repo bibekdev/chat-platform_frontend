@@ -35,6 +35,7 @@ export interface Conversation {
   createdAt: string;
   updatedAt: string;
   lastMessage: LastMessage | null;
+  unreadCount?: number;
 }
 
 export interface ConversationMember {
