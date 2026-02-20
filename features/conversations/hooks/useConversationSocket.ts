@@ -6,6 +6,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import {
   CONVERSATION_EVENTS,
   MessageDeletedEvent,
+  MessageReadEvent,
   MessageUpdatedEvent,
   NewMessageEvent
 } from '@/lib/socket';
@@ -110,11 +111,21 @@ export const useConversationSocket = (conversationId: string) => {
     }
   };
 
+  const handleMessageRead = (event: MessageReadEvent) => {
+    if (event.conversationId !== conversationId) return;
+
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.conversations.details(conversationId)
+    });
+    queryClient.invalidateQueries({ queryKey: queryKeys.conversations.list() });
+  };
+
   useSocketEvents(
     {
       [CONVERSATION_EVENTS.NEW_MESSAGE]: handleNewMessage,
       [CONVERSATION_EVENTS.MESSAGE_UPDATED]: handleMessageUpdated,
-      [CONVERSATION_EVENTS.MESSAGE_DELETED]: handleMessageDeleted
+      [CONVERSATION_EVENTS.MESSAGE_DELETED]: handleMessageDeleted,
+      [CONVERSATION_EVENTS.MESSAGE_READ]: handleMessageRead
     },
     enabled
   );

@@ -70,3 +70,10 @@ export type MessageDeletedEvent = {
   messageId: string;
   deletedForEveryone: boolean;
 };
+
+export type MessageReadEvent = {
+  conversationId: string;
+  messageId: string;
+  userId: string;
+  readAt: string;
+};
