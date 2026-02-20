@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Conversation } from '@/features/conversations/types';
 import { cn, getUserInitials } from '@/lib/utils';
+import { GroupAvatar } from '../group-avatar';
 
 interface ConversationCardProps {
   conversation: Conversation;
@@ -42,10 +43,11 @@ export function ConversationCard({ conversation, onClick }: ConversationCardProp
         <Avatar className='size-12 bg-primary/10'>
           {isGroup ? (
             <>
-              <AvatarImage src={conversation.avatarUrl || undefined} />
-              <AvatarFallback className='bg-primary/10'>
-                <Users className='size-5 text-muted-foreground' />
-              </AvatarFallback>
+              <GroupAvatar
+                avatars={conversation.memberAvatars ?? []}
+                avatarUrl={conversation.avatarUrl}
+                size={48}
+              />
             </>
           ) : (
             <>

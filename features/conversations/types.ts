@@ -36,6 +36,7 @@ export interface Conversation {
   updatedAt: string;
   lastMessage: LastMessage | null;
   unreadCount?: number;
+  memberAvatars: MemberAvatar[];
 }
 
 export interface ConversationMember {
@@ -80,4 +81,9 @@ export interface AddMembersRequest {
 
 export interface UpdateMemberRoleRequest {
   role: 'admin' | 'member';
+}
+
+export interface MemberAvatar {
+  avatar: string;
+  name: string;
 }
