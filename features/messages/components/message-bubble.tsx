@@ -3,6 +3,8 @@ import { format } from 'date-fns';
 import {
   ArchiveIcon,
   BanIcon,
+  CheckCheckIcon,
+  CheckIcon,
   DownloadIcon,
   FileAudioIcon,
   FileIcon,
@@ -17,15 +19,19 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn, getUserInitials } from '@/lib/utils';
 import { MessageAttachment, MessageWithDetails, MessageWithSender } from '../types';
 import { MessageActions } from './message-actions';
+import { ReactionDisplay } from './message-reactions';
 
 interface MessageBubbleProps {
   message: MessageWithDetails;
   isOwn: boolean;
   isFirstInGroup: boolean;
   isLastInGroup: boolean;
+  isRead: boolean;
   onStartEdit: (message: MessageWithDetails) => void;
   onStartReply: (message: MessageWithDetails) => void;
   onDeleteMessage: (messageId: string, forEveryone: boolean) => void;
+  onAddReaction: (messageId: string, reaction: string) => void;
+  onToggleReaction: (messageId: string, reaction: string, hasReacted: boolean) => void;
 }
 
 function formatTime(dateString: string) {
@@ -158,7 +164,10 @@ export function MessageBubble({
   isLastInGroup,
   onStartEdit,
   onStartReply,
-  onDeleteMessage
+  onDeleteMessage,
+  isRead,
+  onAddReaction,
+  onToggleReaction
 }: MessageBubbleProps) {
   if (message.isDeleted && message.deletedForEveryone) {
     return (
@@ -178,6 +187,7 @@ export function MessageBubble({
   }
 
   const hasAttachments = message.attachments && message.attachments.length > 0;
+  const hasReactions = message.reactions && message.reactions.length > 0;
   const corners = getBubbleCorners(
     isFirstInGroup,
     isLastInGroup,
@@ -209,7 +219,24 @@ export function MessageBubble({
       className={cn('text-[10px] text-muted-foreground mt-0.5', isOwn ? 'mr-1' : 'ml-1')}>
       {message.isEdited && <span className='italic mr-1'>edited</span>}
       {isLastInGroup && formatTime(message.createdAt)}
+      {isOwn &&
+        isLastInGroup &&
+        (isRead ? (
+          <CheckCheckIcon className='size-3 text-primary' />
+        ) : (
+          <CheckIcon className='size-3' />
+        ))}
     </span>
+  );
+
+  const reactions = hasReactions && (
+    <ReactionDisplay
+      reactions={message.reactions!}
+      isOwn={isOwn}
+      onToggleReaction={(reaction, hasReacted) =>
+        onToggleReaction(message.id, reaction, hasReacted)
+      }
+    />
   );
 
   const actions = (
@@ -220,6 +247,7 @@ export function MessageBubble({
       onStartReply={onStartReply}
       onStartEdit={onStartEdit}
       onDeleteMessage={onDeleteMessage}
+      onAddReaction={onAddReaction}
     />
   );
 
@@ -246,6 +274,7 @@ export function MessageBubble({
           {hasAttachments && (
             <div className={cn(message.content && 'mt-1.5')}>{attachments}</div>
           )}
+          {reactions}
           {timestamp}
         </div>
       </div>
@@ -294,6 +323,7 @@ export function MessageBubble({
           </div>
           {actions}
         </div>
+        {reactions}
         {timestamp}
       </div>
     </div>

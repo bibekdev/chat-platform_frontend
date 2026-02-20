@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { MessageSquareIcon } from 'lucide-react';
 
@@ -12,7 +13,8 @@ import {
 } from '@/components/ui/empty';
 import { Spinner } from '@/components/ui/spinner';
 import { useAuthUser } from '@/features/auth/hooks';
-import { useGetMessages, useScrollAnchor } from '../hooks';
+import { useConversationById } from '@/features/conversations/hooks';
+import { useGetMessages, useMarkAsRead, useReactions, useScrollAnchor } from '../hooks';
 import { MessageWithDetails } from '../types';
 import { MessageBubble } from './message-bubble';
 
@@ -59,6 +61,9 @@ export const MessageList = ({
   const { data: user } = useAuthUser();
   const { data, isLoading, loadMoreRef, isFetchingNextPage, error } =
     useGetMessages(conversationId);
+  const { data: conversation } = useConversationById(conversationId);
+  const { markAsRead } = useMarkAsRead(conversationId);
+  const { addReaction, toggleReaction } = useReactions(conversationId);
 
   // Reverse for chronological order (API returns newest first)
   const messages = [...data].reverse();
@@ -69,6 +74,32 @@ export const MessageList = ({
     isLoading,
     isFetchingNextPage
   });
+
+  const members = conversation?.members ?? [];
+
+  const latestReadAt = members.reduce((latest, m) => {
+    if (m.userId === user?.id || !m.lastReadAt) return latest;
+    return Math.max(latest, new Date(m.lastReadAt).getTime());
+  }, 0);
+
+  const readMessageTimestamps = new Set<string>();
+  if (user && latestReadAt > 0) {
+    for (const msg of messages) {
+      if (msg.senderId === user.id && new Date(msg.createdAt).getTime() <= latestReadAt) {
+        readMessageTimestamps.add(msg.id);
+      }
+    }
+  }
+
+  // Auto-mark latest message as read when conversation is viewed
+  useEffect(() => {
+    if (!messages.length || !user) return;
+
+    const latestMessage = messages[messages.length - 1];
+    if (latestMessage && latestMessage.senderId !== user.id) {
+      markAsRead(latestMessage.id);
+    }
+  }, [messages, user, markAsRead]);
 
   if (isLoading) {
     return (
@@ -160,11 +191,18 @@ export const MessageList = ({
                   key={message.id}
                   message={message}
                   isOwn={isOwn}
+                  isRead={readMessageTimestamps.has(message.id)}
                   isFirstInGroup={isFirstInGroup}
                   isLastInGroup={isLastInGroup}
                   onStartEdit={onStartEdit}
                   onStartReply={onStartReply}
                   onDeleteMessage={onDeleteMessage}
+                  onAddReaction={(messageId, reaction) =>
+                    addReaction(messageId, reaction)
+                  }
+                  onToggleReaction={(messageId, reaction, hasReacted) =>
+                    toggleReaction(messageId, reaction, hasReacted)
+                  }
                 />
               );
             })}

@@ -24,12 +24,16 @@ export const CONVERSATION_EVENTS = {
   TYPING_STOP: 'typing:stop',
   EDIT_MESSAGE: 'message:edit',
   DELETE_MESSAGE: 'message:delete',
+  MARK_READ: 'message:read',
+  ADD_REACTION: 'reaction:add',
+  REMOVE_REACTION: 'reaction:remove',
 
   // SERVER -> CLIENT
   NEW_MESSAGE: 'message:new',
   USER_TYPING: 'user:typing',
   MESSAGE_UPDATED: 'message:updated',
-  MESSAGE_DELETED: 'message:deleted'
+  MESSAGE_DELETED: 'message:deleted',
+  MESSAGE_READ: 'message:read:update'
 } as const;
 
 export type SocketEvent = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];

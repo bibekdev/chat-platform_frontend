@@ -45,7 +45,7 @@ export type MessageReaction = {
 export type MessageWithDetails = Message & {
   sender: PublicUser;
   attachments?: MessageAttachment[];
-  reactions?: MessageReaction[];
+  reactions?: MessageReactionGrouped[];
   replyTo?: MessageWithSender;
 };
 
@@ -54,4 +54,11 @@ export type CreateMessageDto = {
   type?: MessageType;
   replyToId?: string;
   attachments?: MessageAttachment[];
+};
+
+export type MessageReactionGrouped = {
+  reaction: string;
+  count: number;
+  users: PublicUser[];
+  hasReacted: boolean;
 };

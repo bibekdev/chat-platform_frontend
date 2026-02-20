@@ -5,3 +5,4 @@ export * from './message-header';
 export * from './typing-indicator';
 export * from './message-actions';
 export * from './message-bubble';
+export * from './message-reactions';

@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { MessageWithDetails } from '../types';
+import { ReactionButton } from './message-reactions';
 
 interface MessageActionsProps {
   message: MessageWithDetails;
@@ -16,6 +17,7 @@ interface MessageActionsProps {
   onStartReply: (message: MessageWithDetails) => void;
   onStartEdit: (message: MessageWithDetails) => void;
   onDeleteMessage: (messageId: string, forEveryone: boolean) => void;
+  onAddReaction: (messageId: string, reaction: string) => void;
 }
 
 export function MessageActions({
@@ -24,7 +26,8 @@ export function MessageActions({
   className,
   onStartReply,
   onStartEdit,
-  onDeleteMessage
+  onDeleteMessage,
+  onAddReaction
 }: MessageActionsProps) {
   if (message.isDeleted) return null;
 
@@ -36,6 +39,10 @@ export function MessageActions({
         'flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity',
         className
       )}>
+      <ReactionButton
+        onSelect={emoji => onAddReaction(message.id, emoji)}
+        align={isOwn ? 'end' : 'start'}
+      />
       <button
         onClick={() => onStartReply?.(message)}
         className='p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'>
