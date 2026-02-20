@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: '9dw3tmcrwo.ufs.sh'
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com'
       }
     ]
   }
