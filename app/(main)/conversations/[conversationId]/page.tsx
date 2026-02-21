@@ -8,6 +8,8 @@ import { getServerQueryClient } from '@/lib/queryClient-server';
 import { queryKeys } from '@/lib/queryKeys';
 import { PaginatedResponse } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 interface ConversationIdPageProps {
   params: Promise<{ conversationId: string }>;
 }

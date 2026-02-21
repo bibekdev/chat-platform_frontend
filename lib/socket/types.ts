@@ -77,3 +77,22 @@ export type MessageReadEvent = {
   userId: string;
   readAt: string;
 };
+
+export const CALL_EVENTS = {
+  // Call signaling (client -> server)
+  CALL_INITIATE: 'call:initiate',
+  CALL_ACCEPT: 'call:accept',
+  CALL_REJECT: 'call:reject',
+  CALL_OFFER: 'call:offer',
+  CALL_ANSWER: 'call:answer',
+  CALL_ICE_CANDIDATE: 'call:ice-candidate',
+  CALL_END: 'call:end',
+
+  // Call signaling (server -> client)
+  CALL_INCOMING: 'call:incoming',
+  CALL_ENDED: 'call:ended',
+  CALL_PARTICIPANT_JOINED: 'call:participant-joined',
+  CALL_PARTICIPANT_LEFT: 'call:participant-left'
+} as const;
+
+export type CallEvent = (typeof CALL_EVENTS)[keyof typeof CALL_EVENTS];

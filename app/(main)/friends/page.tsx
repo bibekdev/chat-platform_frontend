@@ -1,5 +1,5 @@
 import { dehydrate, HydrationBoundary, InfiniteData } from '@tanstack/react-query';
-import { UserPlusIcon, UsersIcon } from 'lucide-react';
+import { UsersIcon } from 'lucide-react';
 
 import {
   Empty,
