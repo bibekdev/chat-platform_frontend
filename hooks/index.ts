@@ -7,3 +7,4 @@ export { useSocketStatus } from './useSocketStatus';
 export { useSocket } from './useSocket';
 export { useSocketEvent } from './useSocketEvent';
 export { useSocketEvents } from './useSocketEvents';
+export { useCall } from './useCall';
