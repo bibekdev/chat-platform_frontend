@@ -1,10 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-
 import { useEffect } from 'react';
 
-import { Button } from '@/components/ui/button';
 import { useAuthUser } from '@/features/auth/hooks';
 
 export default function Home() {
