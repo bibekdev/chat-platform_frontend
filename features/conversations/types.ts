@@ -37,6 +37,7 @@ export interface Conversation {
   lastMessage: LastMessage | null;
   unreadCount?: number;
   memberAvatars: MemberAvatar[];
+  otherParticipant?: PublicUser | null;
 }
 
 export interface ConversationMember {

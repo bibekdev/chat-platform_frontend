@@ -32,7 +32,7 @@ export const useLoginMutation = () => {
         expires: new Date(Date.now() + tokens.expiresIn * 1000)
       });
       setCookie('chat_refreshToken', tokens.refreshToken);
-      router.push(callbackUrl ?? '/');
+      router.push(callbackUrl ?? '/conversations');
       toast.success('Login successful', {
         description: 'You are now logged in'
       });

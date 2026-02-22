@@ -7,6 +7,7 @@ import { Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Conversation } from '@/features/conversations/types';
+import { useOnlinePresence } from '@/hooks';
 import { cn, getUserInitials } from '@/lib/utils';
 import { GroupAvatar } from '../group-avatar';
 
@@ -17,6 +18,7 @@ interface ConversationCardProps {
 
 export function ConversationCard({ conversation, onClick }: ConversationCardProps) {
   const { conversationId } = useParams();
+  const { isUserOnline } = useOnlinePresence();
 
   const isGroup = conversation.type === 'group';
   const displayName = conversation.name || 'Direct Message';
@@ -29,6 +31,11 @@ export function ConversationCard({ conversation, onClick }: ConversationCardProp
 
   const isActive = conversation.id === conversationId;
   const hasUnread = (conversation.unreadCount ?? 0) > 0;
+
+  const isDmOnline =
+    !isGroup && conversation.otherParticipant
+      ? isUserOnline(conversation.otherParticipant.id)
+      : false;
 
   return (
     <Card
@@ -50,10 +57,15 @@ export function ConversationCard({ conversation, onClick }: ConversationCardProp
               />
             </>
           ) : (
-            <>
-              <AvatarImage src={conversation.avatarUrl || undefined} />
-              <AvatarFallback>{getUserInitials(displayName)}</AvatarFallback>
-            </>
+            <div className='relative overflow-visible'>
+              <Avatar className='size-12 bg-primary/10'>
+                <AvatarImage src={conversation.avatarUrl || undefined} />
+                <AvatarFallback>{getUserInitials(displayName)}</AvatarFallback>
+              </Avatar>
+              {isDmOnline && (
+                <span className='absolute z-10 bottom-0 right-0 size-3 rounded-full bg-emerald-500 border-2 border-background' />
+              )}
+            </div>
           )}
         </Avatar>
       </div>

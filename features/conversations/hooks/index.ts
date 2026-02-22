@@ -10,3 +10,4 @@ export * from './useLeaveConversation';
 export * from './useRemoveMember';
 export * from './useUpdateConversation';
 export * from './useUpdateMemberRole';
+export * from './useTotalUnreadCount';

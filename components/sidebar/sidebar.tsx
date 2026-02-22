@@ -10,8 +10,11 @@ import {
   UsersIcon
 } from 'lucide-react';
 
+import { useLogoutMutation } from '@/features/auth/hooks';
 import { useAuthUser } from '@/features/auth/hooks/useAuthUser';
+import { useTotalUnreadCount } from '@/features/conversations/hooks';
 import { useFriendRequestIncomingCount } from '@/features/friends/hooks/useFriendRequestIncomingCount';
+import { useSocketStatus } from '@/hooks';
 import { getUserInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import {
@@ -28,11 +31,19 @@ import { NavItem } from './nav-item';
 export const Sidebar = () => {
   const pathname = usePathname();
   const { data: user } = useAuthUser();
+  const { mutate: logout, isPending: isLoggingOut } = useLogoutMutation();
+  const { isConnected: isOnline } = useSocketStatus();
 
   const { data: incomingFriendRequestsCount } = useFriendRequestIncomingCount();
+  const { data: totalUnreadCount } = useTotalUnreadCount();
 
   const navItems = [
-    { href: '/conversations', label: 'Conversations', icon: MessageSquareIcon, badge: 1 },
+    {
+      href: '/conversations',
+      label: 'Conversations',
+      icon: MessageSquareIcon,
+      badge: totalUnreadCount
+    },
     {
       href: '/friends',
       label: 'Friends',
@@ -71,12 +82,19 @@ export const Sidebar = () => {
         <DropdownMenuTrigger
           asChild
           className=''>
-          <Avatar className='size-12 bg-primary/60'>
-            <AvatarImage src={user?.avatar} />
-            <AvatarFallback className='text-lg font-bold bg-primary/60'>
-              {getUserInitials(`${user?.name}`)}
-            </AvatarFallback>
-          </Avatar>
+          <button className='relative overflow-visible cursor-pointer'>
+            <Avatar className='size-12 bg-primary/60'>
+              <AvatarImage src={user?.avatar} />
+              <AvatarFallback className='text-lg font-bold bg-primary/60'>
+                {getUserInitials(`${user?.name}`)}
+              </AvatarFallback>
+            </Avatar>
+            <span
+              className={`absolute bottom-0 right-0 z-10 size-3 rounded-full border-2 border-background ${
+                isOnline ? 'bg-emerald-500' : 'bg-muted-foreground'
+              }`}
+            />
+          </button>
         </DropdownMenuTrigger>
 
         <DropdownMenuContent
@@ -111,9 +129,12 @@ export const Sidebar = () => {
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className='hover:text-destructive-foreground! hover:bg-destructive/50!'>
+          <DropdownMenuItem
+            disabled={isLoggingOut}
+            onClick={() => logout()}
+            className='hover:text-destructive-foreground! hover:bg-destructive/50!'>
             <LogOutIcon className='size-4' />
-            Logout
+            {isLoggingOut ? 'Logging out...' : 'Logout'}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

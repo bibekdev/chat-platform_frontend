@@ -8,3 +8,4 @@ export { useSocket } from './useSocket';
 export { useSocketEvent } from './useSocketEvent';
 export { useSocketEvents } from './useSocketEvents';
 export { useCall } from './useCall';
+export { useOnlinePresence } from './useOnlinePresence';

@@ -7,7 +7,10 @@ export const SOCKET_EVENTS = {
   DISCONNECT: 'disconnect',
   CONNECT_ERROR: 'connect_error',
 
-  // Server to client events
+  // Presence events (server -> client)
+  USER_ONLINE: 'userOnline',
+  USER_OFFLINE: 'userOffline',
+  ONLINE_FRIENDS: 'onlineFriends',
 
   //
 
@@ -94,5 +97,19 @@ export const CALL_EVENTS = {
   CALL_PARTICIPANT_JOINED: 'call:participant-joined',
   CALL_PARTICIPANT_LEFT: 'call:participant-left'
 } as const;
+
+export interface UserOnlineEvent {
+  userId: string;
+  user: PublicUser;
+}
+
+export interface UserOfflineEvent {
+  userId: string;
+  user: PublicUser;
+}
+
+export interface OnlineFriendsEvent {
+  userIds: string[];
+}
 
 export type CallEvent = (typeof CALL_EVENTS)[keyof typeof CALL_EVENTS];

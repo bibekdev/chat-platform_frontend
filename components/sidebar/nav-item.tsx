@@ -31,8 +31,8 @@ export const NavItem = ({ href, icon: Icon, label, isActive, badge }: NavItemPro
             )}
           />
           {badge !== undefined && badge > 0 && (
-            <span className='absolute -top-1 -right-1 size-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs font-bold'>
-              {badge}
+            <span className='absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-[10px] font-bold'>
+              {badge > 99 ? '99+' : badge}
             </span>
           )}
         </Link>
