@@ -2,6 +2,7 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 
 import { Sidebar } from '@/components/sidebar/sidebar';
 import { getUser } from '@/features/auth/server';
+import { ActiveCallOverlay, IncomingCallDialog } from '@/features/calls/components';
 import { getIncomingFriendRequestsCount } from '@/features/friends/server';
 import { getServerQueryClient } from '@/lib/queryClient-server';
 import { queryKeys } from '@/lib/queryKeys';
@@ -34,6 +35,8 @@ const MainLayout = async ({ children }: { children: React.ReactNode }) => {
 
             <main className='flex-1 flex flex-col min-w-0'>{children}</main>
           </div>
+          <IncomingCallDialog />
+          <ActiveCallOverlay />
         </CallProvider>
       </SocketProvider>
     </HydrationBoundary>

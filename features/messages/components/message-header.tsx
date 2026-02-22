@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ConversationSettings, GroupAvatar } from '@/features/conversations/components';
 import { useConversationById } from '@/features/conversations/hooks';
+import { useCall } from '@/hooks';
 import { getUserInitials } from '@/lib/utils';
 
 interface MessageHeaderProps {
@@ -16,13 +17,26 @@ interface MessageHeaderProps {
 export const MessageHeader = ({ conversationId }: MessageHeaderProps) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { data } = useConversationById(conversationId);
+  const { initiateCall, callState, conversationId: activeConvId } = useCall();
 
   const isGroup = data?.type === 'group';
   const memberCount = data?.members?.length ?? 0;
+  const isInCall = callState !== 'idle' && callState !== 'ended';
+  const isThisConversationInCall = isInCall && activeConvId === conversationId;
 
   const memberAvatars =
     data?.members?.slice(0, 4).map(m => ({ avatar: m.user.avatar, name: m.user.name })) ??
     [];
+
+  const handleAudioCall = () => {
+    if (!conversationId || isInCall) return;
+    initiateCall(conversationId as string, 'audio');
+  };
+
+  const handleVideoCall = () => {
+    if (!conversationId || isInCall) return;
+    initiateCall(conversationId as string, 'video');
+  };
 
   return (
     <>
@@ -50,11 +64,13 @@ export const MessageHeader = ({ conversationId }: MessageHeaderProps) => {
 
         <div className='flex items-center gap-2'>
           <Button
+            onClick={handleAudioCall}
             variant='ghost'
             size='icon'>
             <PhoneIcon className='size-4' />
           </Button>
           <Button
+            onClick={handleVideoCall}
             variant='ghost'
             size='icon'>
             <VideoIcon className='size-4' />

@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+'use client';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { toast } from 'sonner';
 
 import { PublicUser } from '@/features/conversations/types';
 import { useSocket, useSocketEvents } from '@/hooks';
@@ -47,22 +51,22 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const incomingCallRef = useRef<CallIncomingEvent | null>(null);
   const callStateRef = useRef<CallState>('idle');
 
-  const updateCallId = (id: string | null) => {
+  const updateCallId = useCallback((id: string | null) => {
     callIdRef.current = id;
     setCallId(id);
-  };
+  }, []);
 
-  const updateCallState = (state: CallState) => {
+  const updateCallState = useCallback((state: CallState) => {
     callStateRef.current = state;
     setCallState(state);
-  };
+  }, []);
 
-  const updateIncomingCall = (call: CallIncomingEvent | null) => {
+  const updateIncomingCall = useCallback((call: CallIncomingEvent | null) => {
     incomingCallRef.current = call;
     setIncomingCall(call);
-  };
+  }, []);
 
-  const cleanup = () => {
+  const cleanup = useCallback(() => {
     peerManagerRef.current?.closeAll();
     peerManagerRef.current = null;
 
@@ -93,17 +97,17 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     setIsGroup(false);
     setLocalStream(null);
     setRemoteStreams(new Map());
-  };
+  }, [updateCallState, updateCallId, updateIncomingCall]);
 
-  const startDurationTimer = () => {
+  const startDurationTimer = useCallback(() => {
     if (durationIntervalRef.current) return;
     setCallDuration(0);
     durationIntervalRef.current = setInterval(() => {
       setCallDuration(prev => prev + 1);
     }, 1000);
-  };
+  }, []);
 
-  const getPeerManager = () => {
+  const getPeerManager = useCallback(() => {
     if (peerManagerRef.current) return peerManagerRef.current;
 
     const pm = new PeerConnectionManager({
@@ -142,56 +146,63 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
     peerManagerRef.current = pm;
     return pm;
-  };
+  }, [emit, startDurationTimer, updateCallState]);
 
-  const initiateCall = async (convId: string, callMediaType: CallMediaType = 'audio') => {
-    if (!isConnected || callStateRef.current !== 'idle') return;
+  const initiateCall = useCallback(
+    async (convId: string, callMediaType: CallMediaType = 'audio') => {
+      if (!isConnected || callStateRef.current !== 'idle') return;
 
-    // Acquire media BEFORE changing state so a permission denial
-    // doesn't leave us in a half-initialised 'ringing' state.
+      // Acquire media BEFORE changing state so a permission denial
+      // doesn't leave us in a half-initialised 'ringing' state.
 
-    const pm = getPeerManager();
-    let stream: MediaStream;
-    try {
-      stream = await pm.acquireLocalStream(callMediaType === 'video');
-    } catch (error) {
-      console.error('[CallContext] Media permission denied:', error);
-      pm.closeAll();
-      peerManagerRef.current = null;
-      return;
-    }
-
-    try {
-      updateCallState('ringing');
-      setConversationId(convId);
-      setMediaType(callMediaType);
-      setLocalStream(stream);
-
-      if (callMediaType === 'video') {
-        setIsVideoEnabled(true);
-      }
-
-      const response = await emit<ActiveCall>(CALL_EVENTS.CALL_INITIATE, {
-        conversationId: convId,
-        mediaType: callMediaType
-      });
-
-      if (response.success || !response.data) {
-        console.error('[CallContext] Server rejected call initiation:', response?.error);
-        cleanup();
+      const pm = getPeerManager();
+      let stream: MediaStream;
+      try {
+        stream = await pm.acquireLocalStream(callMediaType === 'video');
+      } catch (error) {
+        console.error('[CallContext] Media permission denied:', error);
+        pm.closeAll();
+        peerManagerRef.current = null;
         return;
       }
 
-      const call = response.data as unknown as ActiveCall;
-      updateCallId(call.id);
-      setIsGroup(call.isGroup);
-    } catch (error) {
-      console.error('[CallContext] Failed to initiate call:', error);
-      cleanup();
-    }
-  };
+      try {
+        updateCallState('ringing');
+        setConversationId(convId);
+        setMediaType(callMediaType);
+        setLocalStream(stream);
 
-  const acceptCall = async () => {
+        if (callMediaType === 'video') {
+          setIsVideoEnabled(true);
+        }
+
+        const response = await emit<ActiveCall>(CALL_EVENTS.CALL_INITIATE, {
+          conversationId: convId,
+          mediaType: callMediaType
+        });
+
+        if (!response.success || !response.data) {
+          console.error(
+            '[CallContext] Server rejected call initiation:',
+            response?.error
+          );
+          toast.error(response?.error || 'Failed to start call');
+          cleanup();
+          return;
+        }
+
+        const call = response.data as unknown as ActiveCall;
+        updateCallId(call.id);
+        setIsGroup(call.isGroup);
+      } catch (error) {
+        console.error('[CallContext] Failed to initiate call:', error);
+        cleanup();
+      }
+    },
+    [isConnected, emit, getPeerManager, cleanup, updateCallState, updateCallId]
+  );
+
+  const acceptCall = useCallback(async () => {
     const current = incomingCallRef.current;
     if (!current || !isConnected) return;
 
@@ -234,9 +245,17 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       console.error('[CallContext] Failed to accept call:', error);
       cleanup();
     }
-  };
+  }, [
+    isConnected,
+    emit,
+    getPeerManager,
+    cleanup,
+    updateCallState,
+    updateCallId,
+    updateIncomingCall
+  ]);
 
-  const rejectCall = () => {
+  const rejectCall = useCallback(() => {
     const current = incomingCallRef.current;
     if (!current || !isConnected) return;
 
@@ -247,9 +266,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       incomingTimeoutRef.current = null;
     }
     updateIncomingCall(null);
-  };
+  }, [isConnected, emit, updateIncomingCall]);
 
-  const endCall = () => {
+  const endCall = useCallback(() => {
     const currentCallId = callIdRef.current;
     if (!currentCallId || !isConnected) {
       cleanup();
@@ -258,98 +277,112 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
     emit(CALL_EVENTS.CALL_END, { callId: currentCallId });
     cleanup();
-  };
+  }, [isConnected, emit, cleanup]);
 
-  const toggleMute = () => {
+  const toggleMute = useCallback(() => {
     setIsMuted(prev => {
       const next = !prev;
       peerManagerRef.current?.toggleMute(next);
       return next;
     });
-  };
+  }, []);
 
-  const toggleVideo = () => {
+  const toggleVideo = useCallback(() => {
     setIsVideoEnabled(prev => {
       const next = !prev;
       peerManagerRef.current?.toggleVideo(next);
       return next;
     });
-  };
+  }, []);
 
-  const handleCallIncoming = (event: CallIncomingEvent) => {
-    if (callStateRef.current !== 'idle') return;
+  const handleCallIncoming = useCallback(
+    (event: CallIncomingEvent) => {
+      if (callStateRef.current !== 'idle') return;
 
-    updateIncomingCall(event);
+      updateIncomingCall(event);
 
-    incomingTimeoutRef.current = setTimeout(() => {
-      updateIncomingCall(null);
-      emit(CALL_EVENTS.CALL_REJECT, { callId: event.callId });
-    }, 10000);
-  };
+      incomingTimeoutRef.current = setTimeout(() => {
+        updateIncomingCall(null);
+        emit(CALL_EVENTS.CALL_REJECT, { callId: event.callId });
+      }, 10000);
+    },
+    [emit, updateIncomingCall]
+  );
 
-  const handleCallParticipantJoined = async (event: CallParticipantEvent) => {
-    const currentCallId = callIdRef.current;
-    if (!currentCallId || event.callId !== currentCallId) return;
+  const handleCallParticipantJoined = useCallback(
+    async (event: CallParticipantEvent) => {
+      const currentCallId = callIdRef.current;
+      if (!currentCallId || event.callId !== currentCallId) return;
 
-    setParticipants(prev => {
-      const next = new Map(prev);
-      next.set(event.userId, event.user);
-      return next;
-    });
-
-    try {
-      const pm = getPeerManager();
-      const offer = await pm.createOffer(event.userId);
-      await emit(CALL_EVENTS.CALL_OFFER, {
-        callId: currentCallId,
-        targetUserId: event.userId,
-        sdp: offer
+      setParticipants(prev => {
+        const next = new Map(prev);
+        next.set(event.userId, event.user);
+        return next;
       });
-    } catch (error) {
-      console.error('[CallContext] Failed to create offer for peer:', error);
-    }
-  };
 
-  const handleCallOffer = async (event: CallOfferEvent) => {
-    const currentCallId = callIdRef.current;
-    if (!currentCallId || event.callId !== currentCallId) return;
+      try {
+        const pm = getPeerManager();
+        const offer = await pm.createOffer(event.userId);
+        await emit(CALL_EVENTS.CALL_OFFER, {
+          callId: currentCallId,
+          targetUserId: event.userId,
+          sdp: offer
+        });
+      } catch (error) {
+        console.error('[CallContext] Failed to create offer for peer:', error);
+      }
+    },
+    [emit, getPeerManager]
+  );
+  const handleCallOffer = useCallback(
+    async (event: CallOfferEvent) => {
+      const currentCallId = callIdRef.current;
+      if (!currentCallId || event.callId !== currentCallId) return;
 
-    try {
-      const pm = getPeerManager();
-      const answer = await pm.handleOffer(event.fromUserId, event.sdp);
-      await emit(CALL_EVENTS.CALL_ANSWER, {
-        callId: currentCallId,
-        targetUserId: event.fromUserId,
-        sdp: answer
-      });
-    } catch (error) {
-      console.error('[CallContext] Failed to handle offer:', error);
-    }
-  };
+      try {
+        const pm = getPeerManager();
+        const answer = await pm.handleOffer(event.fromUserId, event.sdp);
+        await emit(CALL_EVENTS.CALL_ANSWER, {
+          callId: currentCallId,
+          targetUserId: event.fromUserId,
+          sdp: answer
+        });
+      } catch (error) {
+        console.error('[CallContext] Failed to handle offer:', error);
+      }
+    },
+    [emit, getPeerManager]
+  );
 
-  const handleCallAnswer = async (event: CallAnswerEvent) => {
-    const currentCallId = callIdRef.current;
-    if (!currentCallId || event.callId !== currentCallId) return;
-    try {
-      const pm = getPeerManager();
-      await pm.handleAnswer(event.fromUserId, event.sdp);
-    } catch (error) {
-      console.error('[CallContext] Failed to handle answer:', error);
-    }
-  };
+  const handleCallAnswer = useCallback(
+    async (event: CallAnswerEvent) => {
+      const currentCallId = callIdRef.current;
+      if (!currentCallId || event.callId !== currentCallId) return;
+      try {
+        const pm = getPeerManager();
+        await pm.handleAnswer(event.fromUserId, event.sdp);
+      } catch (error) {
+        console.error('[CallContext] Failed to handle answer:', error);
+      }
+    },
+    [getPeerManager]
+  );
 
-  const handleCallIceCandidate = async (event: CallIceCandidateEvent) => {
-    const currentCallId = callIdRef.current;
-    if (!currentCallId || event.callId !== currentCallId) return;
-    try {
-      const pm = getPeerManager();
-      await pm.addIceCandidate(event.fromUserId, event.candidate);
-    } catch (error) {
-      console.error('[CallContext] Failed to add ICE candidate:', error);
-    }
-  };
+  const handleCallIceCandidate = useCallback(
+    async (event: CallIceCandidateEvent) => {
+      const currentCallId = callIdRef.current;
+      if (!currentCallId || event.callId !== currentCallId) return;
+      try {
+        const pm = getPeerManager();
+        await pm.addIceCandidate(event.fromUserId, event.candidate);
+      } catch (error) {
+        console.error('[CallContext] Failed to add ICE candidate:', error);
+      }
+    },
+    [getPeerManager]
+  );
 
-  const handleCallParticipantLeft = (event: CallParticipantEvent) => {
+  const handleCallParticipantLeft = useCallback((event: CallParticipantEvent) => {
     const currentCallId = callIdRef.current;
     if (!currentCallId || event.callId !== currentCallId) return;
 
@@ -372,29 +405,32 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       next.delete(event.userId);
       return next;
     });
-  };
+  }, []);
 
-  const handleCallEnded = (event: CallEndedEvent) => {
-    const currentCallId = callIdRef.current;
+  const handleCallEnded = useCallback(
+    (event: CallEndedEvent) => {
+      const currentCallId = callIdRef.current;
 
-    // Dismiss matching incoming notification if present
-    const currentIncoming = incomingCallRef.current;
-    if (currentIncoming && event.callId === currentIncoming.callId) {
-      if (incomingTimeoutRef.current) {
-        clearTimeout(incomingTimeoutRef.current);
-        incomingTimeoutRef.current = null;
+      // Dismiss matching incoming notification if present
+      const currentIncoming = incomingCallRef.current;
+      if (currentIncoming && event.callId === currentIncoming.callId) {
+        if (incomingTimeoutRef.current) {
+          clearTimeout(incomingTimeoutRef.current);
+          incomingTimeoutRef.current = null;
+        }
+        updateIncomingCall(null);
       }
-      updateIncomingCall(null);
-    }
 
-    // Only run full cleanup if this event matches the active call.
-    // If callId is null the call was already cleaned up locally (e.g. the
-    // caller pressed end) — don't cleanup again or we'd wipe a new call
-    // that may have been started in the meantime.
-    if (!currentCallId || event.callId !== currentCallId) return;
+      // Only run full cleanup if this event matches the active call.
+      // If callId is null the call was already cleaned up locally (e.g. the
+      // caller pressed end) — don't cleanup again or we'd wipe a new call
+      // that may have been started in the meantime.
+      if (!currentCallId || event.callId !== currentCallId) return;
 
-    cleanup();
-  };
+      cleanup();
+    },
+    [cleanup, updateIncomingCall]
+  );
 
   useSocketEvents({
     [CALL_EVENTS.CALL_INCOMING]: handleCallIncoming,

@@ -1,7 +1,16 @@
 import { PeerCallbacks } from './types';
 
 const RTC_CONFIG: RTCConfiguration = {
-  iceServers: [{ urls: 'stun:localhost:3478' }, { urls: 'turn:localhost:3478' }]
+  iceServers: [
+    {
+      urls: 'stun:localhost:3478'
+    },
+    {
+      urls: 'turn:localhost:3478',
+      username: 'myuser',
+      credential: 'mypassword'
+    }
+  ]
 };
 
 export class PeerConnectionManager {
